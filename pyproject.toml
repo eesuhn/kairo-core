@@ -1,9 +1,38 @@
 [project]
 name = "kairo-core"
 version = "0.1.0"
-description = "Add your description here"
+description = "Core for Notebook with Kairo"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
+    "bertopic>=0.17.0",
+    "datasets>=3.6.0",
+    "faster-whisper>=1.1.1",
+    "llvmlite>=0.44.0",
+    "mlx>=0.26.1",
+    "mlx-lm>=0.25.2",
+    "nougat-ocr>=0.1.17",
+    "numba>=0.61.2",
+    "numpy>=2.2.6",
+    "pandas>=2.3.0",
+    "peft>=0.15.2",
+    "pyannote-audio>=3.3.2",
+    "pymupdf>=1.26.1",
+    "pyyaml>=6.0.2",
+    "scikit-learn>=1.7.0",
+    "spacy>=3.8.7",
+    "span-marker>=1.7.0",
+    "torch>=2.7.1",
+    "torchaudio>=2.7.1",
+    "torchvision>=0.22.1",
+    "transformers>=4.52.4",
+    "trl>=0.18.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "jupyter>=1.1.1",
+    "pytest>=8.4.0",
     "ruff>=0.11.13",
 ]
