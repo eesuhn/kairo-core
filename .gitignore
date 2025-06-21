@@ -203,5 +203,13 @@ __marimo__/
 # *//////////////*
 # //// CUSTOM ////
 # *//////////////*
+
+# Data
+data/interim/*
+data/processed/*
 data/raw/*
-!data/raw/.gitkeep
+!data/**/.gitkeep
+
+# Models
+models/*
+!models/.gitkeep
