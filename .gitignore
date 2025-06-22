@@ -204,9 +204,5 @@ __marimo__/
 # //// CUSTOM ////
 # *//////////////*
 
-# Data
 data/
-
-# Models
-models/*
-!models/.gitkeep
+models/
