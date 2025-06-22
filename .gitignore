@@ -204,6 +204,5 @@ __marimo__/
 # //// CUSTOM ////
 # *//////////////*
 
-data/
-models/
 /models
+/data

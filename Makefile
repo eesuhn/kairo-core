@@ -8,6 +8,7 @@ venv: $(VENV)/bin/activate
 $(VENV)/bin/activate: pyproject.toml
 	@uv sync
 	@uv run pre-commit install --config=$(CONFIG)/pre-commit.yaml
+	@uv run dvc pull
 
 format:
 	@uv run ruff format
@@ -27,4 +28,14 @@ notebooks:
 upgrade:
 	@uv sync --upgrade
 
-.PHONY: all venv format check check-fix test notebooks upgrade
+nb-clean:
+	@uv run nb-clean clean notebooks/
+
+pull-dvc:
+	@uv run dvc pull
+
+push-dvc:
+	@uv run dvc add data/ models/
+	@uv run dvc push
+
+.PHONY: all venv format check check-fix test notebooks upgrade nb-clean pull-dvc push-dvc
