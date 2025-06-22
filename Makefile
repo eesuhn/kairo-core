@@ -37,6 +37,7 @@ pull-dvc:
 push-dvc:
 	@uv run dvc add data/ models/
 	@uv run dvc push
+	@git add ./*.dvc
 
 clean-dvc:
 	@uv run dvc gc -w
