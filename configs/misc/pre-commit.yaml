@@ -2,16 +2,16 @@ repos:
   - repo: local
     hooks:
       - id: nb-clean
-        name: "nb-clean clean notebooks/"
+        name: "Cleaning notebooks"
         entry: uv
         language: system
-        args: ["run", "nb-clean", "clean", "notebooks"]
+        args: ["run", "nb-clean", "clean", "-n", "notebooks/"]
         pass_filenames: false
         stages: [pre-commit]
         always_run: true
 
       - id: ruff-format
-        name: "ruff format"
+        name: "Format with ruff"
         entry: uv
         language: system
         args: ["run", "ruff", "format"]
@@ -20,7 +20,7 @@ repos:
         always_run: true
 
       - id: ruff-check
-        name: "ruff check --fix"
+        name: "Check (Fix) with ruff"
         entry: uv
         language: system
         args: ["run", "ruff", "check", "--fix"]

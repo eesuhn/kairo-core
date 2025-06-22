@@ -29,7 +29,7 @@ upgrade:
 	@uv sync --upgrade
 
 nb-clean:
-	@uv run nb-clean clean notebooks/
+	@uv run nb-clean clean -n notebooks/
 
 pull-dvc:
 	@uv run dvc pull
