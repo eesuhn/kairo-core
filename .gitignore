@@ -208,6 +208,7 @@ __marimo__/
 data/interim/*
 data/processed/*
 data/raw/*
+data/sample/*
 !data/**/.gitkeep
 
 # Models

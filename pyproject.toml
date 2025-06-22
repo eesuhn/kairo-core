@@ -7,6 +7,7 @@ requires-python = "==3.11.*"
 dependencies = [
     "bertopic==0.17.0",
     "datasets==3.6.0",
+    "dvc[gdrive]==3.60.1",
     "fastapi==0.115.12",
     "faster-whisper==1.1.1",
     "llvmlite==0.44.0",
