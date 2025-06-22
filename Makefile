@@ -38,4 +38,10 @@ push-dvc:
 	@uv run dvc add data/ models/
 	@uv run dvc push
 
-.PHONY: all venv format check check-fix test notebooks upgrade nb-clean pull-dvc push-dvc
+clean-dvc:
+	@uv run dvc gc -w
+	@uv run dvc gc -w -c -r gdrive-data
+
+.PHONY: all venv format check check-fix test \
+		notebooks upgrade nb-clean pull-dvc \
+		push-dvc clean-dvc
