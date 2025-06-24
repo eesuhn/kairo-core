@@ -43,6 +43,9 @@ clean-dvc:
 	@uv run dvc gc -w
 	@uv run dvc gc -w -c -r gdrive-data
 
+status-dvc:
+	@uv run dvc data status --granular
+
 .PHONY: all venv format check check-fix test \
 		notebooks upgrade nb-clean pull-dvc \
-		push-dvc clean-dvc
+		push-dvc clean-dvc status-dvc

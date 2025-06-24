@@ -204,5 +204,7 @@ __marimo__/
 # //// CUSTOM ////
 # *//////////////*
 
+.DS_Store
+
 /models
 /data
