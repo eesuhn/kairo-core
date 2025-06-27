@@ -10,6 +10,9 @@ $(VENV)/bin/activate: pyproject.toml
 	@uv run pre-commit install --config=$(CONFIG)/pre-commit.yaml
 	@uv run dvc pull
 
+upgrade:
+	@uv sync --upgrade
+
 format:
 	@uv run ruff format
 
@@ -19,40 +22,36 @@ check:
 check-fix:
 	@uv run ruff check --fix
 
+clean:
+	@uvx pyclean -v .
+
 test:
 	@uv run pytest
 
 notebooks:
 	@uv run jupyter notebook notebooks/
 
-upgrade:
-	@uv sync --upgrade
-
 nb-clean:
 	@uv run nb-clean clean -n notebooks/
-
-pull-dvc:
-	@uv run dvc pull
-
-push-dvc:
-	@uv run dvc add data/ models/
-	@uv run dvc push
-	@git add ./*.dvc
-
-clean-dvc:
-	@uv run dvc gc -w
-	@uv run dvc gc -w -c -r gdrive-data
-
-status-dvc:
-	@uv run dvc data status --granular
-
-clean:
-	@uvx pyclean -v .
 
 nb-update:
 	@uv run -m scripts.nb.main
 
-.PHONY: all venv format check check-fix test \
-		notebooks upgrade nb-clean pull-dvc \
-		push-dvc clean-dvc status-dvc clean \
-		nb-update
+dvc-status:
+	@uv run dvc data status --granular
+
+dvc-pull:
+	@uv run dvc pull
+
+dvc-push:
+	@uv run dvc add data/ models/
+	@uv run dvc push
+	@git add ./*.dvc
+
+dvc-clean:
+	@uv run dvc gc -w
+	@uv run dvc gc -w -c -r gdrive-data
+
+.PHONY: all venv upgrade format check check-fix clean test \
+		notebooks nb-clean nb-update dvc-status dvc-pull \
+		dvc-push dvc-clean
