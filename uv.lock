@@ -1931,14 +1931,14 @@ wheels = [
 
 [[package]]
 name = "justsdk"
-version = "1.2.0"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/fb/72c9889bb79d24c68b4b7ab80021d59c19d7fde927b2f385aec0ebb121fb/justsdk-1.2.0.tar.gz", hash = "sha256:da8adba91da0bba617f3afe07ba1a52e27158dcec8580ed8e585dace676f4ba5", size = 2190424, upload-time = "2025-06-26T15:05:56.394Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/16/54b0c07d5a24b4d3efb77b22096d9ec494946038a73c2aff11a657cb6e0d/justsdk-1.2.1.tar.gz", hash = "sha256:35cc371894ec6d17c3bbfebff81346ee1cc983de2b76d370aeff8baf93b09de3", size = 2190429, upload-time = "2025-06-27T07:31:45.36Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/58/69dd46501a6c867459af7c9340ad84336254db299e0c12b037802e173197/justsdk-1.2.0-py3-none-any.whl", hash = "sha256:6b7bc9462657edb36357e36ad730c2d220512501e082f7294ef9b94684ba956a", size = 3888, upload-time = "2025-06-26T15:05:55.124Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/52/eccce5255cbf188fd39fd2c17f71c2e450873ef535c84efff75131d0c916/justsdk-1.2.1-py3-none-any.whl", hash = "sha256:0f614ce33247167c5127c47cc8bb0bf359fba4b2e0591b72220b1beb5a0620ab", size = 3894, upload-time = "2025-06-27T07:31:44.116Z" },
 ]
 
 [[package]]
