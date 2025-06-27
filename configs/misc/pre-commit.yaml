@@ -1,6 +1,16 @@
 repos:
   - repo: local
     hooks:
+      - id: nb-update
+        name: "Custom scripts/ for notebooks/"
+        entry: uv
+        language: system
+        args: ["run", "-m", "scripts.nb.main"]
+        pass_filenames: false
+        stages: [pre-commit]
+        always_run: false
+        files: '^notebooks/.*\.ipynb$'
+
       - id: nb-clean
         name: "Cleaning notebooks"
         entry: uv
@@ -8,7 +18,8 @@ repos:
         args: ["run", "nb-clean", "clean", "-n", "notebooks/"]
         pass_filenames: false
         stages: [pre-commit]
-        always_run: true
+        always_run: false
+        files: '^notebooks/.*\.ipynb$'
 
       - id: ruff-format
         name: "Format with ruff"

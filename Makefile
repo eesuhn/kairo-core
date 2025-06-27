@@ -49,6 +49,10 @@ status-dvc:
 clean:
 	@uvx pyclean -v .
 
+nb-update:
+	@uv run -m scripts.nb.main
+
 .PHONY: all venv format check check-fix test \
 		notebooks upgrade nb-clean pull-dvc \
-		push-dvc clean-dvc status-dvc clean
+		push-dvc clean-dvc status-dvc clean \
+		nb-update
