@@ -1,11 +1,11 @@
 import warnings
 import pymupdf
 
-from _constants import SAMPLE_DIR
+from _constants import SAMPLE_DATA_DIR
 
 
 warnings.filterwarnings("ignore")
-TARGET_DIR = SAMPLE_DIR / "text"
+TARGET_DIR = SAMPLE_DATA_DIR / "text"
 
 
 def check_sample_files() -> dict:

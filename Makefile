@@ -10,6 +10,9 @@ $(VENV)/bin/activate: pyproject.toml
 	@uv run pre-commit install --config=$(CONFIG)/pre-commit.yaml
 	@uv run dvc pull
 
+data:
+	@uv run -m src.data
+
 upgrade:
 	@uv sync --upgrade
 
@@ -54,4 +57,4 @@ dvc-clean:
 
 .PHONY: all venv upgrade format check check-fix clean test \
 		notebooks nb-clean nb-update dvc-status dvc-pull \
-		dvc-push dvc-clean
+		dvc-push dvc-clean data
