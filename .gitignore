@@ -204,7 +204,10 @@ __marimo__/
 # //// CUSTOM ////
 # *//////////////*
 
+# Misc.
 .DS_Store
+/draft-*
 
+# DVCs
 /models
 /data

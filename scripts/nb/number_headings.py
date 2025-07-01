@@ -109,6 +109,7 @@ def update_number_headings() -> None:
     staged_notebooks = get_staged_notebooks()
 
     if not staged_notebooks:
+        justsdk.print_info("No staged notebooks")
         return
 
     justsdk.print_info(f"Checking {len(staged_notebooks)} staged notebook(s)...")
