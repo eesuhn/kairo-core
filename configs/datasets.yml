@@ -1,13 +1,6 @@
-datasets:
-  ner:
-    - name: allenai/scitldr
-      description: Extreme Summarization of Scientific Documents
-
-    - name: eriktks/conll2003
-
-    - name: midas/semeval2017
-      description: Abstracts of English scientific articles
-
-    - name: DFKI-SLT/few-nerd
-      description: Fine-grained manually annotated NER
-      config: supervised
+ner:
+  - name: allenai/scitldr
+  - name: eriktks/conll2003
+  - name: midas/semeval2017
+  - name: DFKI-SLT/few-nerd
+    config: supervised

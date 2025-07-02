@@ -7,28 +7,22 @@ from datasets import load_dataset
 class DataHandler:
     TARGET_DATA_CONFIG = CONFIGS_DIR / "datasets.yml"
 
-    def __init__(self) -> None:
-        pass
-
-    def download_all_data(self) -> None:
-        self.list_of_datasets = justsdk.read_file(self.TARGET_DATA_CONFIG)
-        for category, datasets in self.list_of_datasets["datasets"].items():
-            justsdk.print_info(f"Category: {category}")
+    def download_data(self) -> None:
+        target_data: dict = justsdk.read_file(self.TARGET_DATA_CONFIG)
+        for c, datasets in target_data.items():
+            justsdk.print_info(f"category/{c}")
             for ds in datasets:
                 config = ds.get("config", None)
-
-                output_path = RAW_DATA_DIR / ds["name"]
-                if not output_path.exists():
-                    exist_marker = f"{justsdk.Fore.GREEN}downloaded{justsdk.Fore.RESET}"
-                    raw_data = load_dataset(ds["name"], config, trust_remote_code=True)
-                    raw_data.save_to_disk(output_path)
+                output = RAW_DATA_DIR / ds["name"]
+                if output.exists():
+                    marker = f"{justsdk.Fore.GREEN}exists{justsdk.Fore.RESET}"
                 else:
-                    exist_marker = f"{justsdk.Fore.MAGENTA}exists{justsdk.Fore.RESET}"
-                print(
-                    f"  - {ds['name']}: {ds.get('description', 'n/a')} ({exist_marker})"
-                )
+                    marker = f"{justsdk.Fore.MAGENTA}downloaded{justsdk.Fore.RESET}"
+                    raw_data = load_dataset(ds["name"], config, trust_remote_code=True)
+                    raw_data.save_to_disk(output)
+                print(f"  - {ds['name']} ({marker})")
 
 
 if __name__ == "__main__":
     dh = DataHandler()
-    dh.download_all_data()
+    dh.download_data()
