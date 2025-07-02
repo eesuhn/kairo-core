@@ -5,11 +5,13 @@ from datasets import load_dataset
 
 
 class Data:
+    TARGET_DATA_CONFIG = CONFIGS_DIR / "datasets.yml"
+
     def __init__(self) -> None:
-        self.download_all_data()
+        pass
 
     def download_all_data(self) -> None:
-        self.list_of_datasets = justsdk.read_file(CONFIGS_DIR / "datasets.yml")
+        self.list_of_datasets = justsdk.read_file(self.TARGET_DATA_CONFIG)
         for category, datasets in self.list_of_datasets["datasets"].items():
             justsdk.print_info(f"Category: {category}")
             for ds in datasets:
@@ -29,3 +31,4 @@ class Data:
 
 if __name__ == "__main__":
     data = Data()
+    data.download_all_data()

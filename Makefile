@@ -26,7 +26,7 @@ check-fix:
 	@uv run ruff check --fix
 
 clean:
-	@uvx pyclean -v .
+	@uvx pyclean .
 
 test:
 	@uv run pytest
