@@ -4,7 +4,7 @@ from ._constants import CONFIGS_DIR, RAW_DATA_DIR
 from datasets import load_dataset
 
 
-class Data:
+class DataHandler:
     TARGET_DATA_CONFIG = CONFIGS_DIR / "datasets.yml"
 
     def __init__(self) -> None:
@@ -30,5 +30,5 @@ class Data:
 
 
 if __name__ == "__main__":
-    data = Data()
-    data.download_all_data()
+    dh = DataHandler()
+    dh.download_all_data()

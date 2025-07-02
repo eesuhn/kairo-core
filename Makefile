@@ -11,7 +11,7 @@ $(VENV)/bin/activate: pyproject.toml
 	@uv run dvc pull
 
 data:
-	@uv run -m src.data
+	@uv run -m src.data_handler
 
 upgrade:
 	@uv sync --upgrade
