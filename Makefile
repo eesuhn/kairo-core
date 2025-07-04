@@ -38,7 +38,7 @@ nb-clean:
 	@uv run nb-clean clean -n notebooks/
 
 nb-update:
-	@uv run -m scripts.nb.main
+	@uv run -m scripts.nb_update
 
 dvc-status:
 	@uv run dvc data status --granular

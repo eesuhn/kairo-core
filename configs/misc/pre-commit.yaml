@@ -5,7 +5,7 @@ repos:
         name: "Custom scripts/ for notebooks/"
         entry: uv
         language: system
-        args: ["run", "-m", "scripts.nb.main"]
+        args: ["run", "-m", "scripts.nb_update"]
         pass_filenames: false
         stages: [pre-commit]
         always_run: false
