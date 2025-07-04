@@ -30,6 +30,9 @@ class DataHandler:
                 self._print_ds_status(name, *status)
 
     def _download_dataset(self, dataset: dict, output_path: Path) -> None:
+        """
+        Save Hugging Face dataset to disk
+        """
         config = dataset.get("config")
         raw_data = load_dataset(dataset["name"], config, trust_remote_code=True)
         raw_data.save_to_disk(output_path)

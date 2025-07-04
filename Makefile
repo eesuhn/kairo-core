@@ -52,8 +52,8 @@ dvc-push:
 	@git add ./*.dvc
 
 dvc-clean:
-	@uv run dvc gc -w
-	@uv run dvc gc -w -c -r gdrive-data
+	@echo y | uv run dvc gc -w
+	@echo y | uv run dvc gc -w -c -r gdrive-data
 
 .PHONY: all venv upgrade format check check-fix clean test \
 		notebooks nb-clean nb-update dvc-status dvc-pull \
