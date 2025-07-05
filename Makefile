@@ -26,6 +26,7 @@ check-fix:
 	@uv run ruff check --fix
 
 clean:
+	rm -rf .pytest_cache/ .ruff_cache/
 	@uvx pyclean .
 
 test:
