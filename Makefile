@@ -8,7 +8,6 @@ venv: $(VENV)/bin/activate
 $(VENV)/bin/activate: pyproject.toml
 	@uv sync
 	@uv run pre-commit install --config=$(CONFIG)/pre-commit.yaml
-	@uv run dvc pull
 
 data:
 	@uv run -m src.data_handler
