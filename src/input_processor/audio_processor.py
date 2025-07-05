@@ -21,11 +21,6 @@ class AudioProcessor:
 
     WHISPER_TRANSCRIBE_PARAMS = {
         "language": "en",
-        # "beam_size": 5,  # Paths searches during decoding
-        # "best_of": 5,
-        # "patience": 1,
-        # "length_penalty": 1,
-        # "temperature": [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],  # Temperature fallback
         # "compression_ratio_threshold": 2.4,  # Reject if text is too repetitive
         # "log_prob_threshold": -1.0,  # Threshold for confidence levels
         # "no_speech_threshold": 0.6,  # Threshold for non-speech detection
@@ -43,7 +38,6 @@ class AudioProcessor:
     DIARIZATION_MODEL_NAME = "pyannote/speaker-diarization-3.1"
 
     DIARIZATION_PARAM = {
-        # "segmentation_onset": 0.5,  # XXX: This hyperparam doesn't exist?
         "clustering": {
             "method": "centroid",
             "min_cluster_size": 12,
