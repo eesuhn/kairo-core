@@ -15,6 +15,7 @@ data:
 
 upgrade:
 	@uv sync --upgrade
+	@git add uv.lock
 
 format:
 	@uv run ruff format
