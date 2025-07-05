@@ -5,21 +5,21 @@ from ._constants import HF_TOKEN
 from faster_whisper import WhisperModel
 from pathlib import Path
 from pyannote.audio import Pipeline
+from pyannote.audio.pipelines.utils.hook import ProgressHook
 
 
 class AudioProcessor:
-    WHISPER_NAME = "whisper-base-en"
+    WHISPER_MODEL_NAME = "whisper-base-en"
 
-    WHISPER_CONFIG = {
+    WHISPER_PARAMS = {
         "model_size_or_path": "base.en",
-        # "device": "cpu",  # NOTE: Seems like using `auto` is better
-        "compute_type": "int8",  # NOTE: `int8` is the smallest quantization
+        "compute_type": "int8",
         "num_workers": 2,
-        "download_root": str(MODEL_DIR / WHISPER_NAME),
-        "local_files_only": True,  # NOTE: Might need to `False` when first init
+        "download_root": str(MODEL_DIR / WHISPER_MODEL_NAME),
+        "local_files_only": True,  # NOTE: Set to `False` if the local model is not available
     }
 
-    AUDIO_CONFIG = {
+    WHISPER_TRANSCRIBE_PARAMS = {
         "language": "en",
         # "beam_size": 5,  # Paths searches during decoding
         # "best_of": 5,
@@ -40,7 +40,16 @@ class AudioProcessor:
         },
     }
 
-    DIARIZATION_NAME = "pyannote/speaker-diarization-3.1"
+    DIARIZATION_MODEL_NAME = "pyannote/speaker-diarization-3.1"
+
+    DIARIZATION_PARAM = {
+        # "segmentation_onset": 0.5,  # XXX: This hyperparam doesn't exist?
+        "clustering": {
+            "method": "centroid",
+            "min_cluster_size": 12,
+            "threshold": 0.7,
+        }
+    }
 
     def __init__(self) -> None:
         self.whisper_model = self._init_whisper_model()
@@ -48,20 +57,28 @@ class AudioProcessor:
 
     def process(self, input_file: Path) -> dict:
         justsdk.print_info(f"Processing audio: {str(input_file)}")
-        # transcription = self._transcribe(input_file)
+        transcription = self._transcribe(input_file)
+        diarization = self._diarize(input_file)
+        return {
+            "transcription": transcription,
+            "diarization": diarization,
+        }
 
     def _init_whisper_model(self) -> WhisperModel:
         try:
-            model = WhisperModel(**self.WHISPER_CONFIG)
-            justsdk.print_success(f"Init {self.WHISPER_NAME}", newline_before=True)
+            model = WhisperModel(**self.WHISPER_PARAMS)
+            justsdk.print_success(
+                f"Init {self.WHISPER_MODEL_NAME}", newline_before=True
+            )
             return model
         except Exception as e:
-            raise RuntimeError(f"Failed to init {self.WHISPER_NAME}: {e}")
+            raise RuntimeError(f"Failed to init {self.WHISPER_MODEL_NAME}: {e}")
 
     def _transcribe(self, audio_file: Path) -> dict:
+        justsdk.print_info(f"Transcribing audio: {str(audio_file)}")
         try:
             generator, info = self.whisper_model.transcribe(
-                audio=str(audio_file), **self.AUDIO_CONFIG
+                audio=str(audio_file), **self.WHISPER_TRANSCRIBE_PARAMS
             )
             segments = list(generator)
             result = {
@@ -77,10 +94,38 @@ class AudioProcessor:
             if HF_TOKEN is None:
                 raise ValueError("Hugging Face token is not set.")
             pipeline = Pipeline.from_pretrained(
-                self.DIARIZATION_NAME, use_auth_token=HF_TOKEN
+                self.DIARIZATION_MODEL_NAME, use_auth_token=HF_TOKEN
             )
-            # NOTE: Can use `torch` to check if GPU is available
-            justsdk.print_success(f"Init {self.DIARIZATION_NAME}", newline_before=True)
+            pipeline.instantiate(self.DIARIZATION_PARAM)
+
+            # TODO: Use `torch.cuda.is_available()` to check if GPU is available
+
+            justsdk.print_success(f"Init {self.DIARIZATION_MODEL_NAME}")
             return pipeline
         except Exception as e:
-            raise RuntimeError(f"Failed to init {self.DIARIZATION_NAME}: {e}")
+            raise RuntimeError(f"Failed to init {self.DIARIZATION_MODEL_NAME}: {e}")
+
+    def _diarize(self, audio_file: Path) -> dict:
+        justsdk.print_info(f"Diarizing audio: {str(audio_file)}")
+        try:
+            with ProgressHook() as hook:
+                diarization = self.diarization_pipeline(file=str(audio_file), hook=hook)
+                return self._diarize_annotation_to_dict(diarization)
+        except Exception as e:
+            raise RuntimeError(f"Failed to diarize {audio_file}: {e}")
+
+    def _diarize_annotation_to_dict(self, diarization: any) -> dict:
+        result: dict = {
+            "segments": [],
+            "labels": list(diarization.labels()),
+        }
+        for segment, _, label in diarization.itertracks(yield_label=True):
+            result["segments"].append(
+                {
+                    "start": segment.start,
+                    "end": segment.end,
+                    "duration": segment.duration,
+                    "label": label,
+                }
+            )
+        return result

@@ -1,30 +1,37 @@
 import pytest
 import justsdk
 
-from ._constants import SAMPLE_DATA_DIR
-from src.input_processor import InputProcessor
 from pathlib import Path
+from ._constants import SAMPLE_DATA_DIR, REPORTS_DIR
+from src.input_processor import InputProcessor
+
+
+SAMPLE_AUDIO_TARGET = "project-proposal"
 
 
 @pytest.fixture(scope="session")
-def target_audio_file() -> Path:
-    return SAMPLE_DATA_DIR / "audio" / "project-proposal.mp3"
+def sample_audio_file() -> Path:
+    return SAMPLE_DATA_DIR / "audio" / f"{SAMPLE_AUDIO_TARGET}.mp3"
 
 
 @pytest.fixture(scope="session")
-def result_audio_file(target_audio_file) -> dict:
-    ip = InputProcessor()
-    return ip.process(target_audio_file)
+def audio_processing_result(sample_audio_file: Path) -> dict:
+    processor = InputProcessor()
+    return processor.process(sample_audio_file)
 
 
-def test_audio_processor(result_audio_file, capsys) -> None:
-    # write_result_audio_file(result_audio_file)
-
+def test_audio_processor(audio_processing_result: dict, capsys) -> None:
     captured = capsys.readouterr()
     print(captured.out)
 
+    assert audio_processing_result is not None
+    assert "transcription" in audio_processing_result
+    assert "diarization" in audio_processing_result
 
-def write_result_audio_file(result: dict) -> None:
-    target_file_path = SAMPLE_DATA_DIR / "audio" / "script" / "project-proposal.json"
-    justsdk.write_file(result, file_path=target_file_path, use_orjson=True, atomic=True)
-    justsdk.print_info(f"Result written to: {target_file_path}")
+    _save_audio_processing_result(audio_processing_result)
+
+
+def _save_audio_processing_result(result: dict) -> None:
+    output_path = REPORTS_DIR / "audio" / f"{SAMPLE_AUDIO_TARGET}.json"
+    justsdk.write_file(result, file_path=output_path, use_orjson=True, atomic=True)
+    justsdk.print_info(f"Result written to: {output_path}")

@@ -52,10 +52,13 @@ dev = [
 testpaths = ["tests"]
 addopts = ["-v", "-s"]
 filterwarnings = [
-    "ignore:builtin type.*has no __module__ attribute:DeprecationWarning",
-    "ignore:Importing 'parser.split_arg_string' is deprecated:DeprecationWarning",
-    "ignore:n_jobs value.*overridden.*by setting random_state:UserWarning:umap.*",
-    "ignore:invalid escape sequence.*:DeprecationWarning:hdbscan.*",
     "default::DeprecationWarning:tests.*",
     "default::UserWarning:tests.*",
+    "ignore:builtin type.*has no __module__ attribute:DeprecationWarning",
+    "ignore:invalid escape sequence.*:DeprecationWarning:hdbscan.*",
+    "ignore:n_jobs value.*overridden.*by setting random_state:UserWarning:umap.*",
+    "ignore:Importing 'parser.split_arg_string' is deprecated:DeprecationWarning",
+	"ignore::matplotlib.MatplotlibDeprecationWarning",
+    "ignore::UserWarning:pyannote.audio.models.blocks.pooling",
+    "ignore::UserWarning:torchaudio._backend.soundfile_backend",
 ]
