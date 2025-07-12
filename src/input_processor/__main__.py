@@ -11,7 +11,7 @@ class InputProcessor:
     AUDIO_EXT = (".mp3", ".mp4")
 
     def __init__(self) -> None:
-        self.ap = AudioProcessor()
+        pass
 
     def process(self, input_file: Path) -> Union[str, dict]:
         """
@@ -34,10 +34,11 @@ class InputProcessor:
         """
         Extract text from text-based files like `.pdf`
         """
-        justsdk.print_info(f"Processing text file: {file_path}")
+        justsdk.print_info(f"Processing text file: {file_path}", newline_before=True)
         content = pymupdf.open(file_path)
         text = "".join([content.load_page(i).get_text() for i in range(len(content))])
         return text.replace("\n", " ").replace("\r", " ")
 
     def _process_audio_file(self, file_path: Path) -> dict:
-        return self.ap.process(file_path)
+        ap = AudioProcessor()
+        return ap.process(file_path)

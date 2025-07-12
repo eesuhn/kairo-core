@@ -7,6 +7,7 @@ from src.input_processor import InputProcessor
 
 
 SAMPLE_AUDIO_TARGET = "project-proposal"
+SAMPLE_TEXT_TARGET = "agile-method"
 
 
 @pytest.fixture(scope="session")
@@ -18,6 +19,17 @@ def sample_audio_file() -> Path:
 def audio_processing_result(sample_audio_file: Path) -> dict:
     processor = InputProcessor()
     return processor.process(sample_audio_file)
+
+
+@pytest.fixture(scope="session")
+def sample_text_file() -> Path:
+    return SAMPLE_DATA_DIR / "text" / f"{SAMPLE_TEXT_TARGET}.pdf"
+
+
+@pytest.fixture(scope="session")
+def text_processing_result(sample_text_file: Path) -> dict:
+    processor = InputProcessor()
+    return processor.process(sample_text_file)
 
 
 def test_audio_processor(audio_processing_result: dict, capsys) -> None:
@@ -32,6 +44,15 @@ def test_audio_processor(audio_processing_result: dict, capsys) -> None:
 
 
 def _save_audio_processing_result(result: dict) -> None:
-    output_path = REPORTS_DIR / "audio" / f"{SAMPLE_AUDIO_TARGET}.json"
+    output_path = REPORTS_DIR / "sample-audio" / f"{SAMPLE_AUDIO_TARGET}.json"
     justsdk.write_file(result, file_path=output_path, use_orjson=True, atomic=True)
     justsdk.print_info(f"Result written to: {output_path}")
+
+
+def test_text_processor(text_processing_result: dict, capsys) -> None:
+    captured = capsys.readouterr()
+    print(captured.out)
+
+    assert text_processing_result is not None
+
+    print(str(text_processing_result)[:300] + "...")

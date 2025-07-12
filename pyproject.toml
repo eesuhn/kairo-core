@@ -50,7 +50,11 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["-v", "-s"]
+addopts = [
+    "--verbose",
+    "--no-header",
+    "-s"
+]
 filterwarnings = [
     "default::DeprecationWarning:tests.*",
     "default::UserWarning:tests.*",

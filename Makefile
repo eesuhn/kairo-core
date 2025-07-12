@@ -9,6 +9,9 @@ $(VENV)/bin/activate: pyproject.toml
 	@uv sync
 	@uv run pre-commit install --config=$(CONFIG)/pre-commit.yaml
 
+%:
+	@:
+
 data:
 	@uv run -m src.data_handler
 
@@ -30,7 +33,7 @@ clean:
 	@uvx pyclean .
 
 test:
-	@uv run pytest
+	@uv run pytest $(filter-out $@,$(MAKECMDGOALS))
 
 notebooks:
 	@uv run jupyter notebook notebooks/
