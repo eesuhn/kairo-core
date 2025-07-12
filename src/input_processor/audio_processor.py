@@ -6,46 +6,57 @@ from faster_whisper import WhisperModel
 from pathlib import Path
 from pyannote.audio import Pipeline
 from pyannote.audio.pipelines.utils.hook import ProgressHook
+from dataclasses import dataclass, field
+
+
+@dataclass
+class AudioProcessorConfig:
+    whisper_model_name: str = "whisper-base-en"
+    whisper_params: dict = field(
+        default_factory=lambda: {
+            "model_size_or_path": "base.en",
+            "compute_type": "int8",
+            "num_workers": 2,
+            # "download_root":  # __post_init__
+            "local_files_only": True,  # NOTE: Set to `False` if the local model is not available
+        }
+    )
+    whisper_transcribe_params: dict = field(
+        default_factory=lambda: {
+            "language": "en",
+            # "compression_ratio_threshold": 2.4,  # Reject if text is too repetitive
+            # "log_prob_threshold": -1.0,  # Threshold for confidence levels
+            # "no_speech_threshold": 0.6,  # Threshold for non-speech detection
+            "word_timestamps": True,  # Generate word-level timestamps
+            "vad_filter": True,  # Skip silent parts
+            "vad_parameters": {
+                # "threshold": 0.5,
+                "min_speech_duration_ms": 250,
+                # "max_speech_duration_s": float("inf"),
+                # "min_silence_duration_ms": 2000,
+                # "speech_pad_ms": 400,
+            },
+        }
+    )
+
+    diarization_model_name: str = "pyannote/speaker-diarization-3.1"
+    diarization_param: dict = field(
+        default_factory=lambda: {
+            "clustering": {
+                "method": "centroid",
+                "min_cluster_size": 12,
+                "threshold": 0.7,
+            }
+        }
+    )
+
+    def __post_init__(self) -> None:
+        self.whisper_params["download_root"] = str(MODEL_DIR / self.whisper_model_name)
 
 
 class AudioProcessor:
-    WHISPER_MODEL_NAME = "whisper-base-en"
-
-    WHISPER_PARAMS = {
-        "model_size_or_path": "base.en",
-        "compute_type": "int8",
-        "num_workers": 2,
-        "download_root": str(MODEL_DIR / WHISPER_MODEL_NAME),
-        "local_files_only": True,  # NOTE: Set to `False` if the local model is not available
-    }
-
-    WHISPER_TRANSCRIBE_PARAMS = {
-        "language": "en",
-        # "compression_ratio_threshold": 2.4,  # Reject if text is too repetitive
-        # "log_prob_threshold": -1.0,  # Threshold for confidence levels
-        # "no_speech_threshold": 0.6,  # Threshold for non-speech detection
-        "word_timestamps": True,  # Generate word-level timestamps
-        "vad_filter": True,  # Skip silent parts
-        "vad_parameters": {
-            # "threshold": 0.5,
-            "min_speech_duration_ms": 250,
-            # "max_speech_duration_s": float("inf"),
-            # "min_silence_duration_ms": 2000,
-            # "speech_pad_ms": 400,
-        },
-    }
-
-    DIARIZATION_MODEL_NAME = "pyannote/speaker-diarization-3.1"
-
-    DIARIZATION_PARAM = {
-        "clustering": {
-            "method": "centroid",
-            "min_cluster_size": 12,
-            "threshold": 0.7,
-        }
-    }
-
     def __init__(self) -> None:
+        self.acp = AudioProcessorConfig()
         self.whisper_model = self._init_whisper_model()
         self.diarization_pipeline = self._init_diarization_pipeline()
 
@@ -60,19 +71,19 @@ class AudioProcessor:
 
     def _init_whisper_model(self) -> WhisperModel:
         try:
-            model = WhisperModel(**self.WHISPER_PARAMS)
+            model = WhisperModel(**self.acp.whisper_params)
             justsdk.print_success(
-                f"Init {self.WHISPER_MODEL_NAME}", newline_before=True
+                f"Init {self.acp.whisper_model_name}", newline_before=True
             )
             return model
         except Exception as e:
-            raise RuntimeError(f"Failed to init {self.WHISPER_MODEL_NAME}: {e}")
+            raise RuntimeError(f"Failed to init {self.acp.whisper_model_name}: {e}")
 
     def _transcribe(self, audio_file: Path) -> dict:
         justsdk.print_info(f"Transcribing audio: {str(audio_file)}")
         try:
             generator, info = self.whisper_model.transcribe(
-                audio=str(audio_file), **self.WHISPER_TRANSCRIBE_PARAMS
+                audio=str(audio_file), **self.acp.whisper_transcribe_params
             )
             segments = list(generator)
             result = {
@@ -88,16 +99,17 @@ class AudioProcessor:
             if HF_TOKEN is None:
                 raise ValueError("Hugging Face token is not set.")
             pipeline = Pipeline.from_pretrained(
-                self.DIARIZATION_MODEL_NAME, use_auth_token=HF_TOKEN
+                self.acp.diarization_model_name,
+                use_auth_token=HF_TOKEN,
             )
-            pipeline.instantiate(self.DIARIZATION_PARAM)
+            pipeline.instantiate(self.acp.diarization_param)
 
             # TODO: Use `torch.cuda.is_available()` to check if GPU is available
 
-            justsdk.print_success(f"Init {self.DIARIZATION_MODEL_NAME}")
+            justsdk.print_success(f"Init {self.acp.diarization_model_name}")
             return pipeline
         except Exception as e:
-            raise RuntimeError(f"Failed to init {self.DIARIZATION_MODEL_NAME}: {e}")
+            raise RuntimeError(f"Failed to init {self.acp.diarization_model_name}: {e}")
 
     def _diarize(self, audio_file: Path) -> dict:
         justsdk.print_info(f"Diarizing audio: {str(audio_file)}")
