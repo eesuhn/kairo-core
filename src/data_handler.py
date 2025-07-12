@@ -1,6 +1,6 @@
 import justsdk
 
-from ._constants import CONFIGS_DIR, RAW_DATA_DIR
+from configs._constants import CONFIGS_DIR, RAW_DATA_DIR
 from datasets import load_dataset
 from pathlib import Path
 

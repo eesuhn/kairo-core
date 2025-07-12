@@ -2,7 +2,7 @@ import pytest
 import justsdk
 
 from pathlib import Path
-from ._constants import SAMPLE_DATA_DIR, REPORTS_DIR
+from configs._constants import SAMPLE_DATA_DIR, REPORTS_DIR
 from src.input_processor import InputProcessor
 
 

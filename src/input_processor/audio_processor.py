@@ -1,7 +1,7 @@
 import justsdk
 
-from .._constants import MODEL_DIR
-from ._constants import HF_TOKEN
+from configs._constants import MODEL_DIR
+from configs._constants import HF_TOKEN
 from faster_whisper import WhisperModel
 from pathlib import Path
 from pyannote.audio import Pipeline
