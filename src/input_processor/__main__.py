@@ -37,7 +37,7 @@ class InputProcessor:
         justsdk.print_info(f"Processing text file: {file_path}", newline_before=True)
         content = pymupdf.open(file_path)
         text = "".join([content.load_page(i).get_text() for i in range(len(content))])
-        return text.replace("\n", " ").replace("\r", " ")
+        return text
 
     def _process_audio_file(self, file_path: Path) -> dict:
         ap = AudioProcessor()

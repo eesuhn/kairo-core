@@ -55,4 +55,10 @@ def test_text_processor(text_processing_result: dict, capsys) -> None:
 
     assert text_processing_result is not None
 
-    print(str(text_processing_result)[:300] + "...")
+    _save_text_processing_result(text_processing_result)
+
+
+def _save_text_processing_result(result: dict) -> None:
+    output_path = REPORTS_DIR / "sample-text" / f"{SAMPLE_TEXT_TARGET}.md"
+    justsdk.write_file(result, file_path=output_path, atomic=True)
+    justsdk.print_info(f"Result written to: {output_path}")
