@@ -61,6 +61,12 @@ class AudioProcessor:
         self.diarization_pipeline = self._init_diarization_pipeline()
 
     def process(self, input_file: Path) -> dict:
+        """
+        Process audio file for transcription and diarization.
+
+        Args:
+            input_file: Path to the audio file to process.
+        """
         justsdk.print_info(f"Processing audio: {str(input_file)}")
         transcription = self._transcribe(input_file)
         diarization = self._diarize(input_file)
@@ -121,6 +127,12 @@ class AudioProcessor:
             raise RuntimeError(f"Failed to diarize {audio_file}: {e}")
 
     def _diarize_annotation_to_dict(self, diarization: any) -> dict:
+        """
+        Convert diarization annotation to a dictionary format.
+
+        Args:
+            diarization: The diarization result from PyAnnote.
+        """
         result: dict = {
             "segments": [],
             "labels": list(diarization.labels()),
