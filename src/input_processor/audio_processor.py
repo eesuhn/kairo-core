@@ -17,7 +17,7 @@ class AudioProcessorConfig:
             "model_size_or_path": "base.en",
             "compute_type": "int8",
             "num_workers": 2,
-            # "download_root":  # __post_init__
+            # "download_root":  # NOTE: Set in `__post_init__`
             "local_files_only": True,  # NOTE: Set to `False` if the local model is not available
         }
     )
