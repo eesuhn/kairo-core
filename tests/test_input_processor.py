@@ -44,7 +44,7 @@ def test_audio_processor(audio_processing_result: dict, capsys) -> None:
 
 
 def _save_audio_processing_result(result: dict) -> None:
-    output_path = REPORTS_DIR / "sample-audio" / f"{SAMPLE_AUDIO_TARGET}.json"
+    output_path = REPORTS_DIR / "sample" / "audio" / f"{SAMPLE_AUDIO_TARGET}.json"
     justsdk.write_file(result, file_path=output_path, use_orjson=True, atomic=True)
     justsdk.print_info(f"Result written to: {output_path}")
 
@@ -59,6 +59,6 @@ def test_text_processor(text_processing_result: dict, capsys) -> None:
 
 
 def _save_text_processing_result(result: dict) -> None:
-    output_path = REPORTS_DIR / "sample-text" / f"{SAMPLE_TEXT_TARGET}.md"
+    output_path = REPORTS_DIR / "sample" / "text" / f"{SAMPLE_TEXT_TARGET}.md"
     justsdk.write_file(result, file_path=output_path, atomic=True)
     justsdk.print_info(f"Result written to: {output_path}")
