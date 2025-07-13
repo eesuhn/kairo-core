@@ -2,8 +2,8 @@ import justsdk
 
 from torch import nn
 from span_marker import SpanMarkerModel
-from configs._constants import MODEL_DIR, REPORTS_DIR
-from dataclasses import dataclass
+from configs._constants import MODEL_DIR, REPORTS_DIR, CONFIGS_DIR
+from dataclasses import dataclass, field
 
 
 REPORTS_MODEL_DIR = REPORTS_DIR / "model"
@@ -16,6 +16,22 @@ class NerModelConfig:
     hidden_size: int = 512
     dropout: float = 0.1
 
+    base_labels: list = field(default_factory=list)
+    new_labels: list = field(default_factory=list)
+    all_labels: list = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        local_base_model_config = justsdk.read_file(
+            REPORTS_DIR / "model" / "ner" / "base-model-config.json"
+        )
+        id2label: dict = local_base_model_config.get("id2label", {})
+        self.base_labels = list(id2label.values())
+
+        model_config = justsdk.read_file(CONFIGS_DIR / "ner" / "model-config.yml")
+        self.new_labels.extend(model_config.get("new_academic_labels", []))
+
+        self.all_labels = self.base_labels + self.new_labels
+
 
 class NerModel(nn.Module):
     def __init__(self, *args, **kwargs):
@@ -23,8 +39,6 @@ class NerModel(nn.Module):
         self.nmc = NerModelConfig()
         self.base_model = self._init_ner_model()
         self._freeze_base_model()
-
-        self.sequential = self._get_ner_sequential()
 
         # self._save_ner_base_model_config()
         # self._save_ner_base_model_encoder_config()
@@ -45,7 +59,7 @@ class NerModel(nn.Module):
         for p in self.base_model.parameters():
             p.requires_grad_(False)
 
-    def _get_ner_sequential(self) -> nn.Sequential:
+    def _get_ner_feature_projection(self) -> nn.Sequential:
         try:
             encoder_hidden_size = self.base_model.encoder.config.hidden_size
             target_hidden_size = self.nmc.hidden_size
@@ -57,10 +71,10 @@ class NerModel(nn.Module):
                 nn.ReLU(),
                 nn.Dropout(self.nmc.dropout),
             )
-            justsdk.print_success("Created NER sequential")
+            justsdk.print_success("Created NER feature projection")
             return seq
         except Exception as e:
-            raise RuntimeError(f"Failed to get NER sequential: {e}")
+            raise RuntimeError(f"Failed to get NER feature projection: {e}")
 
     def _save_ner_base_model_config(self) -> None:
         output_path = REPORTS_MODEL_DIR / "ner" / "base-model-config.json"
