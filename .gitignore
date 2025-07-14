@@ -206,7 +206,7 @@ __marimo__/
 
 # Misc.
 .DS_Store
-/draft-*
+/draft
 
 # DVCs
 /models
