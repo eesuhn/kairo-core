@@ -44,6 +44,13 @@ nb-clean:
 nb-update:
 	@uv run -m scripts.nb_update
 
+dvc-setup:
+#	macOS
+	rm -rf ~/Library/Caches/pydrive2fs/
+#	Windows
+#	rm -rf %LOCALAPPDATA%\pydrive2fs
+	@uv run dvc pull
+
 dvc-status:
 	@uv run dvc data status --granular
 
@@ -61,4 +68,4 @@ dvc-clean:
 
 .PHONY: all venv upgrade format check check-fix clean test \
 		notebooks nb-clean nb-update dvc-status dvc-pull \
-		dvc-push dvc-clean data
+		dvc-push dvc-clean data dvc-setup
