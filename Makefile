@@ -1,5 +1,6 @@
 VENV = .venv
 CONFIG = configs/misc
+OS := $(shell uname -s)
 
 all: venv
 
@@ -45,10 +46,13 @@ nb-update:
 	@uv run -m scripts.nb_update
 
 dvc-setup:
-#	macOS
-	rm -rf ~/Library/Caches/pydrive2fs/
-#	Windows
-#	rm -rf %LOCALAPPDATA%\pydrive2fs
+	@if [ "$(OS)" = "Darwin" ]; then \
+		rm -rf ~/Library/Caches/pydrive2fs/; \
+	elif [ "$(OS)" = "Linux" ]; then \
+		rm -rf ~/.cache/pydrive2fs/; \
+	else \
+		rm -rf "$$LOCALAPPDATA/pydrive2fs" 2>/dev/null || true; \
+	fi
 	@uv run dvc pull
 
 dvc-status:
