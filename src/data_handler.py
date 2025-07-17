@@ -91,6 +91,18 @@ class DataHandler:
             justsdk.print_error(f"Error loading dataset {dataset_name}: {e}")
             return None
 
+    def list_datasets_by_category(self, category: str) -> list:
+        """
+        List dataset names by category from the config
+
+        Returns:
+            List of dataset if category exists, empty list otherwise
+        """
+        return [
+            dataset["name"]
+            for dataset in justsdk.read_file(self.TARGET_DATA_CONFIG).get(category, [])
+        ]
+
     def clear_cache(self) -> None:
         self._dataset_cache.clear()
         justsdk.print_info("Cleared DataHandler cache")

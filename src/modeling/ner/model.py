@@ -25,33 +25,29 @@ class NerModelConfig:
     dropout: float = 0.1
 
     # Labels
-    base_labels: list = field(default_factory=list)
-    new_labels: list = field(default_factory=list)
-    all_labels: list = field(default_factory=list)
+    base_labels: dict = field(default_factory=dict)
+    dataset_labels: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        local_base_model_config = justsdk.read_file(
+        base_model_config = justsdk.read_file(
             REPORTS_DIR / "model" / "ner" / "base-model-config.json"
         )
-        id2label: dict = local_base_model_config.get("id2label", {})
-        self.base_labels = list(id2label.values())
+        model_config = justsdk.read_file(CONFIG_DIR / "ner" / "model.yml")
 
-        model_config = justsdk.read_file(CONFIG_DIR / "ner" / "model-config.yml")
-        self.new_labels.extend(model_config.get("new_academic_labels", []))
-
-        self.all_labels = self.base_labels + self.new_labels
+        self.base_labels = base_model_config.get("label2id", {})
+        self.dataset_labels = model_config.get("dataset_labels", {})
 
 
 class NerModel(nn.Module):
     save_config: bool = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.nmc = NerModelConfig()
         self.base_model = self._init_ner_model()
 
         self._freeze_base_model(show_info=True)
-        self.encoder_feature_dim = self._get_base_encoder_feature_dim()
+        self.encoder_feature_dimension = self._get_encoder_feature_dimension()
 
         if self.save_config:
             NerModelHelper._save_ner_base_model_config(self.base_model)
@@ -109,7 +105,7 @@ class NerModel(nn.Module):
         if frozen_params == 0:
             justsdk.print_warning(f"Nothing frozen for {self.nmc.model_name}")
 
-    def _get_base_encoder_feature_dim(self) -> int:
+    def _get_encoder_feature_dimension(self) -> int:
         """
         Get the feature dimension of the base model's encoder
         """
@@ -118,7 +114,12 @@ class NerModel(nn.Module):
             justsdk.print_info(f"Encoder hidden size: {encoder_hidden_size}")
             return encoder_hidden_size
         except Exception as e:
-            raise RuntimeError(f"Failed to get feature dim: {e}")
+            raise RuntimeError(f"Failed to get feature dimension: {e}")
+
+
+class NerDecisionLayer(nn.Module):
+    def __init__(self, hidden_size: int, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
 
 class NerModelHelper:
