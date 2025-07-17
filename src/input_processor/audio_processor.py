@@ -1,7 +1,8 @@
 import justsdk
+import torch
 
-from configs._constants import MODEL_DIR
-from configs._constants import HF_TOKEN
+from config._constants import MODEL_DIR
+from config._constants import HF_TOKEN
 from faster_whisper import WhisperModel
 from pathlib import Path
 from pyannote.audio import Pipeline
@@ -110,7 +111,8 @@ class AudioProcessor:
             )
             pipeline.instantiate(self.acp.diarization_param)
 
-            # TODO: Use `torch.cuda.is_available()` to check if GPU is available
+            if torch.cuda.is_available():
+                pipeline.to(torch.device("cuda"))
 
             justsdk.print_success(f"Init {self.acp.diarization_model_name}")
             return pipeline

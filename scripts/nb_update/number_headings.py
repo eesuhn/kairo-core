@@ -3,7 +3,7 @@ import re
 import subprocess
 
 from pathlib import Path
-from configs._constants import ROOT_PATH
+from config._constants import ROOT_PATH
 
 
 def check_and_update_headings(file_path: Path) -> bool:

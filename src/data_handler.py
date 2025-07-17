@@ -1,13 +1,14 @@
 import justsdk
+import platform
 
 from typing import Optional
-from configs._constants import CONFIGS_DIR, RAW_DATA_DIR
+from config._constants import CONFIG_DIR, RAW_DATA_DIR
 from datasets import load_dataset, DatasetDict, load_from_disk
 from pathlib import Path
 
 
 class DataHandler:
-    TARGET_DATA_CONFIG = CONFIGS_DIR / "datasets.yml"
+    TARGET_DATA_CONFIG = CONFIG_DIR / "datasets.yml"
 
     def __init__(self):
         self._dataset_cache: dict = {}
@@ -50,6 +51,8 @@ class DataHandler:
         """
         Load a dataset from local storage with optional caching
 
+        `load_from_disk(keep_in_memory=True)` if running on Linux/Windows
+
         Args:
             dataset_name: Name of the dataset (e.g., 'allenai/scitldr')
             use_cache: Whether to use cached dataset if available
@@ -72,7 +75,12 @@ class DataHandler:
             # dataset = DatasetDict.load_from_disk(
             #     str(dataset_path)
             # )  # NOTE: Only returns `DatasetDict`
-            dataset = load_from_disk(str(dataset_path))
+
+            # NOTE: Cache dataset in RAM for Linux/Windows
+            keep_in_memory = platform.system() in ["Linux", "Windows"]
+            dataset = load_from_disk(
+                dataset_path=str(dataset_path), keep_in_memory=keep_in_memory
+            )
 
             if use_cache:
                 self._dataset_cache[dataset_name] = dataset
@@ -84,16 +92,10 @@ class DataHandler:
             return None
 
     def clear_cache(self) -> None:
-        """
-        Clear the dataset cache
-        """
         self._dataset_cache.clear()
         justsdk.print_info("Cleared DataHandler cache")
 
     def list_cached_datasets(self) -> list:
-        """
-        Get list of currently cached dataset names
-        """
         return list(self._dataset_cache.keys())
 
 

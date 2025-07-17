@@ -2,7 +2,7 @@ import justsdk
 
 from torch import nn
 from span_marker import SpanMarkerModel
-from configs._constants import MODEL_DIR, REPORTS_DIR, CONFIGS_DIR
+from config._constants import MODEL_DIR, REPORTS_DIR, CONFIG_DIR
 from dataclasses import dataclass, field
 
 
@@ -27,7 +27,7 @@ class NerModelConfig:
         id2label: dict = local_base_model_config.get("id2label", {})
         self.base_labels = list(id2label.values())
 
-        model_config = justsdk.read_file(CONFIGS_DIR / "ner" / "model-config.yml")
+        model_config = justsdk.read_file(CONFIG_DIR / "ner" / "model-config.yml")
         self.new_labels.extend(model_config.get("new_academic_labels", []))
 
         self.all_labels = self.base_labels + self.new_labels
@@ -40,8 +40,8 @@ class NerModel(nn.Module):
         self.base_model = self._init_ner_model()
         self._freeze_base_model()
 
-        # self._save_ner_base_model_config()
-        # self._save_ner_base_model_encoder_config()
+        # NerModelHelper._save_ner_base_model_config(self.base_model)
+        # NerModelHelper._save_ner_base_model_encoder_config(self.base_model)
 
     def _init_ner_model(self) -> SpanMarkerModel:
         try:
@@ -76,20 +76,24 @@ class NerModel(nn.Module):
         except Exception as e:
             raise RuntimeError(f"Failed to get NER feature projection: {e}")
 
-    def _save_ner_base_model_config(self) -> None:
+
+class NerModelHelper:
+    @staticmethod
+    def _save_ner_base_model_config(base_model: SpanMarkerModel) -> None:
         output_path = REPORTS_MODEL_DIR / "ner" / "base-model-config.json"
         justsdk.write_file(
-            self.base_model.config.to_dict(),
+            base_model.config.to_dict(),
             file_path=output_path,
             use_orjson=True,
             atomic=True,
         )
         justsdk.print_info(f"Config written to: {output_path}")
 
-    def _save_ner_base_model_encoder_config(self) -> None:
+    @staticmethod
+    def _save_ner_base_model_encoder_config(base_model: SpanMarkerModel) -> None:
         output_path = REPORTS_MODEL_DIR / "ner" / "base-model-encoder-config.json"
         justsdk.write_file(
-            self.base_model.encoder.config.to_dict(),
+            base_model.encoder.config.to_dict(),
             file_path=output_path,
             use_orjson=True,
             atomic=True,

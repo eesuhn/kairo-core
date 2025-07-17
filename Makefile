@@ -1,5 +1,5 @@
 VENV = .venv
-CONFIG = configs/misc
+CONFIG = config
 OS := $(shell uname -s)
 
 all: venv
