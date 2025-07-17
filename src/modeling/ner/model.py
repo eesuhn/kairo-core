@@ -43,11 +43,15 @@ class NerModelConfig:
 
 
 class NerModel(nn.Module):
+    save_config: bool = False
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.nmc = NerModelConfig()
         self.base_model = self._init_ner_model()
+
         self._freeze_base_model(show_info=True)
+        self.encoder_feature_dim = self._get_base_encoder_feature_dim()
 
         if self.save_config:
             NerModelHelper._save_ner_base_model_config(self.base_model)
@@ -65,6 +69,12 @@ class NerModel(nn.Module):
             raise RuntimeError(f"Failed to init {self.nmc.model_name}: {e}")
 
     def _freeze_base_model(self, show_info: bool = False) -> None:
+        """
+        Freeze the base model `encoder` and `classifier` layers based on config
+
+        Args:
+            show_info (bool): Whether to print info about frozen parameters
+        """
         if not self.nmc.freeze_base_model:
             justsdk.print_info(f"Disabled freezing {self.nmc.model_name}")
             return
@@ -98,6 +108,17 @@ class NerModel(nn.Module):
 
         if frozen_params == 0:
             justsdk.print_warning(f"Nothing frozen for {self.nmc.model_name}")
+
+    def _get_base_encoder_feature_dim(self) -> int:
+        """
+        Get the feature dimension of the base model's encoder
+        """
+        try:
+            encoder_hidden_size = self.base_model.encoder.config.hidden_size
+            justsdk.print_info(f"Encoder hidden size: {encoder_hidden_size}")
+            return encoder_hidden_size
+        except Exception as e:
+            raise RuntimeError(f"Failed to get feature dim: {e}")
 
 
 class NerModelHelper:
