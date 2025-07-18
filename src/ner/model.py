@@ -275,6 +275,18 @@ class NerModelSaver:
         optimizer_state: Optional[dict] = None,
         metrics: Optional[dict] = None,
     ) -> None:
+        """
+        Save the model checkpoint to the specified cache directory
+
+        Save part of the model config as JSON config file
+
+        Args:
+            model: The NerModel instance to save
+            cache_dir: Directory to save the model checkpoint
+            epoch: Current training epoch (optional)
+            optimizer_state: State of the optimizer (optional)
+            metrics: Metrics to save (optional)
+        """
         cache_path = MODEL_DIR / "ner-span-marker" / cache_dir
         cache_path.mkdir(parents=True, exist_ok=True)
 
@@ -325,6 +337,12 @@ class NerModelSaver:
     def load_model_checkpoint(
         cache_dir: Path,
     ) -> tuple:
+        """
+        Load the model checkpoint from the specified cache directory
+
+        Args:
+            cache_dir: Directory to load the model checkpoint from
+        """
         cache_path = MODEL_DIR / "ner-span-marker" / cache_dir
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         checkpoint = torch.load(cache_path / "checkpoint.pt", map_location=device)
