@@ -48,7 +48,7 @@ class NerModelConfig:
 class NerModel(nn.Module):
     save_config: bool = False
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, skip_init_projection: bool = False, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.nmc = NerModelConfig()
         self.base_model = self._init_ner_model()
@@ -67,7 +67,8 @@ class NerModel(nn.Module):
             num_uni_ds_enc_labels=len(self.uni_ds_enc_labels),
         )
 
-        self._init_projection_matrix()
+        if not skip_init_projection:
+            self._init_projection_matrix()
 
         if self.save_config:
             NerHelper._save_ner_base_model_config(self.base_model)
@@ -328,7 +329,8 @@ class NerModelSaver:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         checkpoint = torch.load(cache_path / "checkpoint.pt", map_location=device)
 
-        nm = NerModel()
+        # NOTE: Might not be necessary to skip init projection
+        nm = NerModel(skip_init_projection=True)
         nm.load_state_dict(checkpoint["model_state_dict"])
         nm.to(device)
 
