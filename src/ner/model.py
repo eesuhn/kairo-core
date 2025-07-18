@@ -6,6 +6,8 @@ from span_marker import SpanMarkerModel
 from config._constants import MODEL_DIR, REPORTS_DIR, CONFIG_DIR
 from dataclasses import dataclass, field
 from .helper import NerHelper
+from typing import Optional
+from transformers import PreTrainedModel
 
 
 REPORTS_MODEL_DIR = REPORTS_DIR / "model"
@@ -52,7 +54,7 @@ class NerModel(nn.Module):
         super().__init__(*args, **kwargs)
         self.nmc = NerModelConfig()
         self.base_model = self._init_ner_model()
-        self.encoder = self.base_model.encoder
+        self.encoder: PreTrainedModel = self.base_model.encoder
 
         # Encoder
         self._freeze_encoder(show_info=True)
@@ -66,6 +68,8 @@ class NerModel(nn.Module):
             encoder_feature_dimension=self.encoder_feature_dimension,
             num_uni_ds_enc_labels=len(self.uni_ds_enc_labels),
         )
+
+        self._init_projection_matrix()
 
         if self.save_config:
             NerModelHelper._save_ner_base_model_config(self.base_model)
@@ -162,6 +166,41 @@ class NerModel(nn.Module):
             self.nmc.base_labels, self.nmc.dataset_labels
         )
 
+    def _init_projection_matrix(self) -> None:
+        projection = torch.zeros(len(self.nmc.base_labels), len(self.uni_ds_enc_labels))
+        for base_id, uni_ids in self.unified_ds_to_base_map.items():
+            if uni_ids:
+                weight = 1.0 / len(uni_ids)
+                for uid in uni_ids:
+                    projection[base_id, uid] = weight
+
+        # Update the decision layer's projection matrix
+        with torch.no_grad():
+            self.decision_layer.label_projection.data = projection
+        justsdk.print_info("Init projection matrix for decision layer")
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        return_base_predictions: bool = False,
+        **kwargs,
+    ) -> nn.Module:
+        encoder_out: PreTrainedModel = self.encoder(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            inputs_embeds=inputs_embeds,
+            **kwargs,
+        )
+        seq_out = encoder_out.last_hidden_state
+        out: nn.Module = self.decision_layer(
+            seq_out, return_base_predictions=return_base_predictions
+        )
+        return out
+
 
 class NerDecisionLayer(nn.Module):
     def __init__(
@@ -210,6 +249,23 @@ class NerDecisionLayer(nn.Module):
             self.label_projection, gain=self.nmc.xavier_uniform_gain
         )
 
+    def forward(
+        self,
+        encoder_out: torch.Tensor,
+        return_base_predictions: bool = False,
+    ) -> torch.Tensor:
+        base_logits: torch.Tensor = self.base_classifier(encoder_out)
+        base_probs = torch.softmax(base_logits, dim=-1)
+        combined_feat = torch.cat([encoder_out, base_probs], dim=-1)
+
+        uni_logits = self.refine_layer(combined_feat)
+        projected_base = torch.matmul(base_probs, self.label_projection)
+        uni_logits += projected_base
+
+        if return_base_predictions:
+            return uni_logits, base_logits
+        return uni_logits
+
 
 class NerModelHelper:
     @staticmethod
@@ -236,7 +292,41 @@ class NerModelHelper:
 
 
 def main() -> None:
-    pass
+    nm = NerModel()
+
+    justsdk.print_info(f"Base model: {nm.nmc.model_name}")
+    justsdk.print_info(f"Encoder dimension: {nm.encoder_feature_dimension}")
+
+    justsdk.print_info(
+        f"No. of base labels: {len(nm.nmc.base_labels)}", newline_before=True
+    )
+    justsdk.print_data(nm.nmc.base_labels)
+
+    justsdk.print_info(
+        f"No. of unified dataset encoder labels: {len(nm.uni_ds_enc_labels)}",
+        newline_before=True,
+    )
+    justsdk.print_data(nm.uni_ds_enc_labels)
+
+    justsdk.print_info("Testing forward pass...", newline_before=True)
+    batch_size, seq_length = 2, 128
+    dummy_input = torch.randint(0, 1000, (batch_size, seq_length))
+    dummy_attention = torch.ones(batch_size, seq_length)
+
+    with torch.no_grad():
+        uni_logits = nm(
+            input_ids=dummy_input,
+            attention_mask=dummy_attention,
+        )
+        justsdk.print_info(f"Unified logits shape: {uni_logits.shape}")
+
+        uni_logits, base_logits = nm(
+            input_ids=dummy_input,
+            attention_mask=dummy_attention,
+            return_base_predictions=True,
+        )
+        justsdk.print_info(f"Unified logits shape: {uni_logits.shape}")
+        justsdk.print_info(f"Base logits shape: {base_logits.shape}")
 
 
 if __name__ == "__main__":
