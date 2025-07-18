@@ -308,8 +308,12 @@ class NerModelSaver:
         justsdk.print_success(f"Checkpoint saved to {checkpoint_path}")
 
         config_path = cache_path / "config.json"
+        json_checkpoint = {
+            "model_config": checkpoint["model_config"],
+            "label_mappings": checkpoint["label_mappings"],
+        }
         justsdk.write_file(
-            data=checkpoint,
+            data=json_checkpoint,
             file_path=config_path,
             use_orjson=True,
             atomic=True,
