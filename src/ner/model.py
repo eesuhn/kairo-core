@@ -1,4 +1,5 @@
 import justsdk
+import torch
 
 from torch import nn
 from span_marker import SpanMarkerModel
@@ -18,6 +19,7 @@ class NerModelConfig:
 
     # Training params
     freeze_encoder: bool = True
+    xavier_uniform_gain: float = 0.1
 
     # Decision layer
     hidden_size: int = 512
@@ -59,6 +61,11 @@ class NerModel(nn.Module):
         # Labels
         self._create_uni_ds_labels()
         self._create_label_mapping()
+
+        self.decision_layer = NerDecisionLayer(
+            encoder_feature_dimension=self.encoder_feature_dimension,
+            num_uni_ds_enc_labels=len(self.uni_ds_enc_labels),
+        )
 
         if self.save_config:
             NerModelHelper._save_ner_base_model_config(self.base_model)
@@ -151,15 +158,57 @@ class NerModel(nn.Module):
         self.unified_ds_to_base_map = NerHelper.map_unified_ds_to_base_labels(
             self.uni_ds_enc_labels, self.nmc.base_labels
         )
-        justsdk.print_debug("uni_ds_enc_id2label")
-        justsdk.print_data(self.uni_ds_enc_id2label)
-        justsdk.print_debug("unified_ds_to_base_map")
-        justsdk.print_data(self.unified_ds_to_base_map)
         self.base_to_dataset_map = NerHelper.map_base_to_dataset(
             self.nmc.base_labels, self.nmc.dataset_labels
         )
-        justsdk.print_debug("base_to_dataset_map")
-        justsdk.print_data(self.base_to_dataset_map)
+
+
+class NerDecisionLayer(nn.Module):
+    def __init__(
+        self,
+        encoder_feature_dimension: int,
+        num_uni_ds_enc_labels: int,
+        *args,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.nmc = NerModelConfig()
+        num_base_labels = len(self.nmc.base_labels)
+
+        self.base_classifier = nn.Sequential(
+            nn.Linear(encoder_feature_dimension, self.nmc.hidden_size),
+            nn.LayerNorm(self.nmc.hidden_size),
+            nn.ReLU(),
+            nn.Dropout(self.nmc.dropout),
+            nn.Linear(self.nmc.hidden_size, num_base_labels),
+        )
+
+        refine_dim = encoder_feature_dimension + num_base_labels
+        self.refine_layer = nn.Sequential(
+            nn.Linear(refine_dim, self.nmc.hidden_size),
+            nn.LayerNorm(self.nmc.hidden_size),
+            nn.ReLU(),
+            nn.Dropout(self.nmc.dropout),
+            nn.Linear(self.nmc.hidden_size, num_uni_ds_enc_labels),
+        )
+
+        self.label_projection = nn.Parameter(
+            torch.zeros(num_base_labels, num_uni_ds_enc_labels)
+        )
+
+        self._init_weights()
+
+    def _init_weights(self) -> None:
+        for module in [self.base_classifier, self.refine_layer]:
+            for layer in module:
+                if isinstance(layer, nn.Linear):
+                    nn.init.xavier_uniform_(layer.weight)
+                    if layer.bias is not None:
+                        nn.init.zeros_(layer.bias)
+        nn.init.xavier_uniform_(
+            self.label_projection, gain=self.nmc.xavier_uniform_gain
+        )
 
 
 class NerModelHelper:
@@ -187,7 +236,7 @@ class NerModelHelper:
 
 
 def main() -> None:
-    NerModel()
+    pass
 
 
 if __name__ == "__main__":
