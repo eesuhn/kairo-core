@@ -110,8 +110,8 @@ class NerModel(nn.Module):
 
         Add labels in BIO format for the encoder
         """
-        uni_enc_labels = {"O"}  # Outside label
-        uni_labels = {"O"}  # Outside label
+        uni_enc_labels = {"O"}
+        uni_labels = {"O"}
 
         for labels in self.nmc.dataset_labels.values():
             for label in labels:
@@ -126,6 +126,8 @@ class NerModel(nn.Module):
                     [f"B-{entity_type}", f"I-{entity_type}"]
                 )  # Add BIO format for encoder
                 uni_labels.add(entity_type)
+
+        # NOTE: Outside label will be placed at the largest index once sorted
 
         # Encoder
         self.uni_ds_enc_labels = sorted(uni_enc_labels)
@@ -149,6 +151,15 @@ class NerModel(nn.Module):
         self.unified_ds_to_base_map = NerHelper.map_unified_ds_to_base_labels(
             self.uni_ds_enc_labels, self.nmc.base_labels
         )
+        justsdk.print_debug("uni_ds_enc_id2label")
+        justsdk.print_data(self.uni_ds_enc_id2label)
+        justsdk.print_debug("unified_ds_to_base_map")
+        justsdk.print_data(self.unified_ds_to_base_map)
+        self.base_to_dataset_map = NerHelper.map_base_to_dataset(
+            self.nmc.base_labels, self.nmc.dataset_labels
+        )
+        justsdk.print_debug("base_to_dataset_map")
+        justsdk.print_data(self.base_to_dataset_map)
 
 
 class NerModelHelper:
@@ -176,7 +187,7 @@ class NerModelHelper:
 
 
 def main() -> None:
-    pass
+    NerModel()
 
 
 if __name__ == "__main__":
