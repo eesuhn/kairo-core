@@ -16,9 +16,7 @@ class NerModelConfig:
     cache_dir = str(MODEL_DIR / model_name)
 
     # Training params
-    freeze_base_model: bool = True
     freeze_encoder: bool = True
-    freeze_classifier: bool = False  # NOTE: We don't need to freeze this for now
 
     # Decision layer
     hidden_size: int = 512
@@ -35,7 +33,13 @@ class NerModelConfig:
         model_config = justsdk.read_file(CONFIG_DIR / "ner" / "model.yml")
 
         self.base_labels = base_model_config.get("label2id", {})
-        self.dataset_labels = model_config.get("dataset_labels", {})
+
+        raw_dataset_labels = model_config.get("dataset_labels", {})
+        self.dataset_labels = {
+            name: labels
+            for dataset in raw_dataset_labels
+            for name, labels in dataset.items()
+        }
 
 
 class NerModel(nn.Module):
@@ -45,9 +49,14 @@ class NerModel(nn.Module):
         super().__init__(*args, **kwargs)
         self.nmc = NerModelConfig()
         self.base_model = self._init_ner_model()
+        self.encoder = self.base_model.encoder
 
-        self._freeze_base_model(show_info=True)
+        # Encoder
+        self._freeze_encoder(show_info=True)
         self.encoder_feature_dimension = self._get_encoder_feature_dimension()
+
+        # Labels
+        self.unified_labels = self._create_unified_labels()
 
         if self.save_config:
             NerModelHelper._save_ner_base_model_config(self.base_model)
@@ -64,46 +73,23 @@ class NerModel(nn.Module):
         except Exception as e:
             raise RuntimeError(f"Failed to init {self.nmc.model_name}: {e}")
 
-    def _freeze_base_model(self, show_info: bool = False) -> None:
+    def _freeze_encoder(self, show_info: bool = False) -> None:
         """
-        Freeze the base model `encoder` and `classifier` layers based on config
+        Freeze the encoder parameters of the base model
 
         Args:
-            show_info (bool): Whether to print info about frozen parameters
+            show_info: Whether to print info about frozen parameters
         """
-        if not self.nmc.freeze_base_model:
-            justsdk.print_info(f"Disabled freezing {self.nmc.model_name}")
+        if not self.nmc.freeze_encoder:
+            justsdk.print_warning("Encoder freezing disabled")
             return
-
-        if not self.nmc.freeze_encoder and not self.nmc.freeze_classifier:
-            justsdk.print_warning(f"Nothing to freeze for {self.nmc.model_name}")
-            return
-
-        total_params: int = 0
         frozen_params: int = 0
-
-        justsdk.print_info(f"Freezing {self.nmc.model_name}")
-        for name, param in self.base_model.named_parameters():
-            total_params += param.numel()
-            should_freeze = False
-
-            if self.nmc.freeze_encoder and "encoder" in name:
-                should_freeze = True
-            elif self.nmc.freeze_classifier and "classifier" in name:
-                should_freeze = True
-
-            if should_freeze:
-                param.requires_grad_(False)
-                frozen_params += param.numel()
-
+        justsdk.print_info("Freezing encoder")
+        for param in self.encoder.parameters():
+            param.requires_grad_(False)
+            frozen_params += param.numel()
         if show_info:
-            justsdk.print_info(
-                f"Frozen {frozen_params:,} / {total_params:,} "
-                f"({frozen_params / total_params:.2%})"
-            )
-
-        if frozen_params == 0:
-            justsdk.print_warning(f"Nothing frozen for {self.nmc.model_name}")
+            justsdk.print_info(f"Frozen {frozen_params:,} params in encoder")
 
     def _get_encoder_feature_dimension(self) -> int:
         """
@@ -115,6 +101,31 @@ class NerModel(nn.Module):
             return encoder_hidden_size
         except Exception as e:
             raise RuntimeError(f"Failed to get feature dimension: {e}")
+
+    def _create_unified_labels(self) -> list:
+        """
+        Create a unified set of labels from dataset labels
+        """
+        unified_labels = set()
+        unified_labels.add("O")  # Outside label
+        for _, labels in self.nmc.dataset_labels.items():
+            for label in labels:
+                label: str
+                if label == "O":
+                    continue
+                if label.startswith(("B-", "I-")):
+                    entity_type = label[2:]
+                    unified_labels.add(f"B-{entity_type}")
+                    unified_labels.add(f"I-{entity_type}")
+                else:
+                    unified_labels.add(f"B-{label.upper()}")
+                    unified_labels.add(f"I-{label.upper()}")
+        unified_labels = sorted(unified_labels)
+
+        self.label2id = {label: idx for idx, label in enumerate(unified_labels)}
+        self.id2label = {idx: label for label, idx in self.label2id.items()}
+
+        return unified_labels
 
 
 class NerDecisionLayer(nn.Module):
@@ -146,5 +157,9 @@ class NerModelHelper:
         justsdk.print_info(f"Config written to {output_path}")
 
 
+def main() -> None:
+    pass
+
+
 if __name__ == "__main__":
-    nm = NerModel()
+    main()
