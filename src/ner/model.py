@@ -4,6 +4,7 @@ from torch import nn
 from span_marker import SpanMarkerModel
 from config._constants import MODEL_DIR, REPORTS_DIR, CONFIG_DIR
 from dataclasses import dataclass, field
+from .helper import NerHelper
 
 
 REPORTS_MODEL_DIR = REPORTS_DIR / "model"
@@ -56,7 +57,8 @@ class NerModel(nn.Module):
         self.encoder_feature_dimension = self._get_encoder_feature_dimension()
 
         # Labels
-        self.unified_labels = self._create_unified_labels()
+        self._create_uni_ds_labels()
+        self._create_label_mapping()
 
         if self.save_config:
             NerModelHelper._save_ner_base_model_config(self.base_model)
@@ -102,35 +104,51 @@ class NerModel(nn.Module):
         except Exception as e:
             raise RuntimeError(f"Failed to get feature dimension: {e}")
 
-    def _create_unified_labels(self) -> list:
+    def _create_uni_ds_labels(self) -> None:
         """
-        Create a unified set of labels from dataset labels
+        Create unified dataset labels for both encoder and base model
+
+        Add labels in BIO format for the encoder
         """
-        unified_labels = set()
-        unified_labels.add("O")  # Outside label
-        for _, labels in self.nmc.dataset_labels.items():
+        uni_enc_labels = {"O"}  # Outside label
+        uni_labels = {"O"}  # Outside label
+
+        for labels in self.nmc.dataset_labels.values():
             for label in labels:
-                label: str
                 if label == "O":
                     continue
-                if label.startswith(("B-", "I-")):
-                    entity_type = label[2:]
-                    unified_labels.add(f"B-{entity_type}")
-                    unified_labels.add(f"I-{entity_type}")
-                else:
-                    unified_labels.add(f"B-{label.upper()}")
-                    unified_labels.add(f"I-{label.upper()}")
-        unified_labels = sorted(unified_labels)
+                entity_type = (
+                    label[2:].upper()
+                    if label.startswith(("B-", "I-"))
+                    else label.upper()
+                )
+                uni_enc_labels.update(
+                    [f"B-{entity_type}", f"I-{entity_type}"]
+                )  # Add BIO format for encoder
+                uni_labels.add(entity_type)
 
-        self.label2id = {label: idx for idx, label in enumerate(unified_labels)}
-        self.id2label = {idx: label for label, idx in self.label2id.items()}
+        # Encoder
+        self.uni_ds_enc_labels = sorted(uni_enc_labels)
+        self.uni_ds_enc_label2id = {
+            label: idx for idx, label in enumerate(self.uni_ds_enc_labels)
+        }
+        self.uni_ds_enc_id2label = {
+            idx: label for label, idx in self.uni_ds_enc_label2id.items()
+        }
 
-        return unified_labels
+        # Base
+        self.uni_ds_labels = sorted(uni_labels)
+        self.uni_ds_label2id = {
+            label: idx for idx, label in enumerate(self.uni_ds_labels)
+        }
+        self.uni_ds_id2label = {
+            idx: label for label, idx in self.uni_ds_label2id.items()
+        }
 
-
-class NerDecisionLayer(nn.Module):
-    def __init__(self, hidden_size: int, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def _create_label_mapping(self) -> None:
+        self.unified_ds_to_base_map = NerHelper.map_unified_ds_to_base_labels(
+            self.uni_ds_enc_labels, self.nmc.base_labels
+        )
 
 
 class NerModelHelper:
