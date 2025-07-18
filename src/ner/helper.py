@@ -1,3 +1,12 @@
+import justsdk
+
+from span_marker import SpanMarkerModel
+from config._constants import REPORTS_DIR
+
+
+REPORTS_MODEL_DIR = REPORTS_DIR / "model"
+
+
 class NerHelper:
     @staticmethod
     def map_unified_ds_to_base_labels(
@@ -103,3 +112,25 @@ class NerHelper:
                 mapping[label] = base_labels[base_type]
 
         return mapping
+
+    @staticmethod
+    def _save_ner_base_model_config(base_model: SpanMarkerModel) -> None:
+        output_path = REPORTS_MODEL_DIR / "ner" / "base-model-config.json"
+        justsdk.write_file(
+            base_model.config.to_dict(),
+            file_path=output_path,
+            use_orjson=True,
+            atomic=True,
+        )
+        justsdk.print_info(f"Config written to {output_path}")
+
+    @staticmethod
+    def _save_ner_base_model_encoder_config(base_model: SpanMarkerModel) -> None:
+        output_path = REPORTS_MODEL_DIR / "ner" / "base-model-encoder-config.json"
+        justsdk.write_file(
+            base_model.encoder.config.to_dict(),
+            file_path=output_path,
+            use_orjson=True,
+            atomic=True,
+        )
+        justsdk.print_info(f"Config written to {output_path}")
