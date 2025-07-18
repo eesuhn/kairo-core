@@ -8,9 +8,7 @@ from dataclasses import dataclass, field
 from .helper import NerHelper
 from typing import Optional
 from transformers import PreTrainedModel
-
-
-REPORTS_MODEL_DIR = REPORTS_DIR / "model"
+from pathlib import Path
 
 
 @dataclass
@@ -265,6 +263,73 @@ class NerDecisionLayer(nn.Module):
         if return_base_predictions:
             return uni_logits, base_logits
         return uni_logits
+
+
+class NerModelSaver:
+    @staticmethod
+    def save_model_checkpoint(
+        model: "NerModel",
+        cache_dir: Path,
+        epoch: Optional[int] = None,
+        optimizer_state: Optional[dict] = None,
+        metrics: Optional[dict] = None,
+    ) -> None:
+        cache_path = MODEL_DIR / "ner-span-marker" / cache_dir
+        cache_path.mkdir(parents=True, exist_ok=True)
+
+        checkpoint = {
+            "model_state_dict": model.state_dict(),
+            "model_config": {
+                "model_name": model.nmc.model_name,
+                "hidden_size": model.nmc.hidden_size,
+                "dropout": model.nmc.dropout,
+                "freeze_encoder": model.nmc.freeze_encoder,
+            },
+            "label_mappings": {
+                "unified_labels": model.uni_ds_enc_labels,
+                "encoder_label2id": model.uni_ds_enc_label2id,
+                "encoder_id2label": model.uni_ds_enc_id2label,
+                "base_labels": model.nmc.base_labels,
+                "dataset_labels": model.nmc.dataset_labels,
+                "unified_to_base_map": model.unified_ds_to_base_map,
+                "base_to_dataset_map": model.base_to_dataset_map,
+            },
+        }
+
+        if epoch is not None:
+            checkpoint["epoch"] = epoch
+        if optimizer_state is not None:
+            checkpoint["optimizer_state_dict"] = optimizer_state
+        if metrics is not None:
+            checkpoint["metrics"] = metrics
+
+        checkpoint_path = cache_path / "checkpoint.pt"
+        torch.save(checkpoint, checkpoint_path)
+        justsdk.print_success(f"Checkpoint saved to {checkpoint_path}")
+
+        config_path = cache_path / "config.json"
+        justsdk.write_file(
+            data=checkpoint,
+            file_path=config_path,
+            use_orjson=True,
+            atomic=True,
+        )
+        justsdk.print_success(f"Model config saved to {config_path}")
+
+    @staticmethod
+    def load_model_checkpoint(
+        cache_dir: Path,
+    ) -> tuple:
+        cache_path = MODEL_DIR / "ner-span-marker" / cache_dir
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        checkpoint = torch.load(cache_path / "checkpoint.pt", map_location=device)
+
+        nm = NerModel()
+        nm.load_state_dict(checkpoint["model_state_dict"])
+        nm.to(device)
+
+        justsdk.print_success(f"Model loaded from {cache_path}")
+        return nm, checkpoint
 
 
 def main() -> None:
