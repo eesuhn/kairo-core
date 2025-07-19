@@ -3,6 +3,6 @@ ner:
     config: supervised
   - name: eriktks/conll2003
 
-summary:
-  - name: allenai/scitldr
-  - name: midas/semeval2017
+# summary:
+#   - name: allenai/scitldr
+#   - name: midas/semeval2017
