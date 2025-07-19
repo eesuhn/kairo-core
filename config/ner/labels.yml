@@ -1,4 +1,15 @@
-ai:
+eriktks/conll2003:
+  - O
+  - B-PER
+  - I-PER
+  - B-ORG
+  - I-ORG
+  - B-LOC
+  - I-LOC
+  - B-MISC
+  - I-MISC
+
+eesuhn/crossner-ai:
   - O
   - B-field
   - I-field
@@ -29,7 +40,7 @@ ai:
   - B-misc
   - I-misc
 
-literature:
+eesuhn/crossner-literature:
   - O
   - B-book
   - I-book
@@ -56,7 +67,7 @@ literature:
   - B-misc
   - I-misc
 
-science:
+eesuhn/crossner-science:
   - O
   - B-scientist
   - I-scientist

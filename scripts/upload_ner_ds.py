@@ -47,9 +47,9 @@ class UploadNerDataset:
 
         return tokens_list, ner_tags_list
 
-    def _create_ds_card(self, domain: str, dataset_dict: DatasetDict) -> str:
+    def _create_ds_card(self, repo_id: str, dataset_dict: DatasetDict) -> str:
         """Create a dataset card with full dataset_info like conll2003."""
-        labels = self.domain_labels[domain]
+        labels = self.domain_labels[repo_id]
 
         num_train = len(dataset_dict.get("train", []))
         num_validation = len(dataset_dict.get("validation", []))
@@ -76,7 +76,7 @@ class UploadNerDataset:
             "task_ids:",
             "  - named-entity-recognition",
             "paperswithcode_id: crossner",
-            f"pretty_name: CrossNER-{domain.upper()}",
+            f"pretty_name: CrossNER-{repo_id.upper()}",
             "dataset_info:",
             "  features:",
             "  - name: tokens",
@@ -109,10 +109,10 @@ class UploadNerDataset:
         yaml_str = "\n".join(yaml_lines)
         readme_content = f"""{yaml_str}
 
-# CrossNER {domain.upper()} Dataset
+# CrossNER {repo_id.upper()} Dataset
 
 An NER dataset for cross-domain evaluation, [read more](https://arxiv.org/abs/2012.04373).  
-This split contains labeled data from the {domain.upper()} domain.
+This split contains labeled data from the {repo_id.upper()} domain.
 
 ## Features
 
@@ -132,7 +132,7 @@ The dataset uses the following {len(labels)} labels:
 ```python
 from datasets import load_dataset
 
-dataset = load_dataset("eesuhn/crossner-{domain}")
+dataset = load_dataset("eesuhn/crossner-{repo_id}")
 ```
     """
 
@@ -165,7 +165,7 @@ dataset = load_dataset("eesuhn/crossner-{domain}")
                 justsdk.print_success(f"Deleted existing {repo_id}")
                 continue
 
-            labels = self.domain_labels[domain]
+            labels = self.domain_labels[repo_id]
             label_to_id = {label: idx for idx, label in enumerate(labels)}
 
             features = Features(
@@ -197,7 +197,7 @@ dataset = load_dataset("eesuhn/crossner-{domain}")
 
             dataset_dict = DatasetDict(splits)
 
-            card_content = self._create_ds_card(domain, dataset_dict)
+            card_content = self._create_ds_card(repo_id, dataset_dict)
             dataset_dict.push_to_hub(repo_id, token=args.token)
 
             api.upload_file(
