@@ -2,12 +2,12 @@ import justsdk
 import platform
 
 from typing import Optional
-from config._constants import CONFIG_DIR, RAW_DATA_DIR
+from config._constants import CONFIG_DIR, INTER_DATA_DIR
 from datasets import load_dataset, DatasetDict, load_from_disk
 from pathlib import Path
 
 
-class DataHandler:
+class InterDataHandler:
     TARGET_DATA_CONFIG = CONFIG_DIR / "datasets.yml"
 
     def __init__(self):
@@ -15,7 +15,7 @@ class DataHandler:
 
     def download_data(self) -> None:
         """
-        Download datasets from `TARGET_DATA_CONFIG`, save them to `RAW_DATA_DIR`
+        Download datasets from `TARGET_DATA_CONFIG`, save them to `INTER_DATA_DIR`
         """
         target_data = justsdk.read_file(self.TARGET_DATA_CONFIG)
 
@@ -24,7 +24,7 @@ class DataHandler:
 
             for dataset in datasets:
                 name = dataset["name"]
-                output_path = RAW_DATA_DIR / name
+                output_path = INTER_DATA_DIR / name
 
                 if output_path.exists():
                     status = "exists", justsdk.Fore.GREEN
@@ -64,7 +64,7 @@ class DataHandler:
             justsdk.print_info(f"Loading cached dataset: {dataset_name}")
             return self._dataset_cache[dataset_name]
 
-        dataset_path = RAW_DATA_DIR / dataset_name
+        dataset_path = INTER_DATA_DIR / dataset_name
 
         if not dataset_path.exists():
             justsdk.print_error(f"Dataset not found: {dataset_path}")
@@ -112,5 +112,5 @@ class DataHandler:
 
 
 if __name__ == "__main__":
-    dh = DataHandler()
+    dh = InterDataHandler()
     dh.download_data()

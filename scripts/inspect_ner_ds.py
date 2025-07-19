@@ -1,7 +1,7 @@
 import justsdk
 import argparse
 
-from src.data_handler import DataHandler
+from src.inter_data_handler import InterDataHandler
 
 
 def inspect_local_dataset(name, split="train", n=3) -> None:
@@ -13,7 +13,7 @@ def inspect_local_dataset(name, split="train", n=3) -> None:
         split: The split of the dataset to inspect.
         n: Number of examples to display.
     """
-    dh = DataHandler()
+    dh = InterDataHandler()
     ds_dict = dh.load_dataset(name)
 
     # NOTE: Avaiable splits: ['train', 'validation', 'test']

@@ -13,8 +13,8 @@ $(VENV)/bin/activate: pyproject.toml
 %:
 	@:
 
-data:
-	@uv run -m src.data_handler
+hf-data:
+	@uv run -m src.inter_data_handler
 
 upgrade:
 	@uv sync --upgrade
@@ -72,4 +72,4 @@ dvc-clean:
 
 .PHONY: all venv upgrade format check check-fix clean test \
 		notebooks nb-clean nb-update dvc-status dvc-pull \
-		dvc-push dvc-clean data dvc-setup
+		dvc-push dvc-clean hf-data dvc-setup

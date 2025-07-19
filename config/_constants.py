@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT_PATH = Path.cwd()
 CONFIG_DIR = ROOT_PATH / "config"
 DATA_DIR = ROOT_PATH / "data"
+INTER_DATA_DIR = DATA_DIR / "interim"
 RAW_DATA_DIR = DATA_DIR / "raw"
 SAMPLE_DATA_DIR = DATA_DIR / "sample"
 MODEL_DIR = ROOT_PATH / "models"

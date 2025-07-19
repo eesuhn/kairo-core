@@ -1,5 +1,4 @@
 import justsdk
-import os
 import argparse
 
 from datasets import (
@@ -11,14 +10,15 @@ from datasets import (
     Value,
 )
 from huggingface_hub import HfApi, login
-from config._constants import CONFIG_DIR
+from config._constants import CONFIG_DIR, RAW_DATA_DIR
+from pathlib import Path
 
 
 class UploadNerDataset:
     def __init__(self) -> None:
         self.domain_labels = justsdk.read_file(CONFIG_DIR / "ner" / "labels.yml")
 
-    def _read_conll_file(self, filepath, label_to_id):
+    def _read_conll_file(self, filepath: Path, label_to_id: dict) -> tuple:
         """Read CoNLL format file."""
         tokens_list = []
         ner_tags_list = []
@@ -47,7 +47,7 @@ class UploadNerDataset:
 
         return tokens_list, ner_tags_list
 
-    def _create_ds_card(self, domain, dataset_dict):
+    def _create_ds_card(self, domain: str, dataset_dict: DatasetDict) -> str:
         """Create a dataset card with full dataset_info like conll2003."""
         labels = self.domain_labels[domain]
 
@@ -109,31 +109,31 @@ class UploadNerDataset:
         yaml_str = "\n".join(yaml_lines)
         readme_content = f"""{yaml_str}
 
-    # CrossNER {domain.upper()} Dataset
+# CrossNER {domain.upper()} Dataset
 
-    This is a NER dataset for cross-domain evaluation.  
-    This split contains data from the {domain.upper()} domain, read more [here](https://arxiv.org/abs/2012.04373).
+An NER dataset for cross-domain evaluation, [read more](https://arxiv.org/abs/2012.04373).  
+This split contains labeled data from the {domain.upper()} domain.
 
-    ## Features
+## Features
 
-    - **tokens**: A list of words in the sentence
-    - **ner_tags**: A list of NER labels (as integers) corresponding to each token
+- **tokens**: A list of words in the sentence
+- **ner_tags**: A list of NER labels (as integers) corresponding to each token
 
-    ## Label Mapping
+## Label Mapping
 
-    The dataset uses the following {len(labels)} labels:
+The dataset uses the following {len(labels)} labels:
 
-    | Index | Label |
-    |-------|-------|
-    {chr(10).join(f"| {i} | {label} |" for i, label in enumerate(labels))}
+| Index | Label |
+|-------|-------|
+{chr(10).join(f"| {i} | {label} |" for i, label in enumerate(labels))}
 
-    ## Usage
+## Usage
 
-    ```python
-    from datasets import load_dataset
+```python
+from datasets import load_dataset
 
-    dataset = load_dataset("eesuhn/crossner-{domain}")
-    ```
+dataset = load_dataset("eesuhn/crossner-{domain}")
+```
     """
 
         return readme_content
@@ -153,12 +153,16 @@ class UploadNerDataset:
         api = HfApi(token=args.token)
 
         for domain in ["ai", "literature", "science"]:
-            print(f"\nProcessing {domain}...")
+            justsdk.print_info(f"Processing {domain}...", newline_before=True)
             repo_id = f"{args.username}/crossner-{domain}"
+
+            if api.repo_info(repo_id, repo_type="dataset"):
+                justsdk.print_warning(f"{repo_id} already exists. Skip uploading.")
+                continue
 
             if args.delete_existing:
                 api.delete_repo(repo_id, repo_type="dataset", token=args.token)
-                print(f"Deleted existing dataset: {repo_id}")
+                justsdk.print_success(f"Deleted existing {repo_id}")
                 continue
 
             labels = self.domain_labels[domain]
@@ -179,8 +183,8 @@ class UploadNerDataset:
                 ("validation", "dev.txt"),
                 ("test", "test.txt"),
             ]:
-                filepath = os.path.join("./ner_data", domain, filename)
-                if os.path.exists(filepath):
+                filepath = Path(RAW_DATA_DIR / "ner" / domain / filename)
+                if filepath.exists():
                     tokens_list, ner_tags_list = self._read_conll_file(
                         filepath, label_to_id
                     )
@@ -204,9 +208,7 @@ class UploadNerDataset:
                 token=args.token,
             )
 
-            print(f"Uploaded {repo_id}")
-
-        print("\nAll done!")
+            justsdk.print_success(f"Uploaded {repo_id}")
 
 
 if __name__ == "__main__":
