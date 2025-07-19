@@ -16,9 +16,6 @@ $(VENV)/bin/activate: pyproject.toml
 data:
 	@uv run -m src.data_handler
 
-inspect-ds:
-	@uv run -m scripts.inspect_dataset
-
 upgrade:
 	@uv sync --upgrade
 	@git add uv.lock
@@ -75,4 +72,4 @@ dvc-clean:
 
 .PHONY: all venv upgrade format check check-fix clean test \
 		notebooks nb-clean nb-update dvc-status dvc-pull \
-		dvc-push dvc-clean data dvc-setup inspect-ds
+		dvc-push dvc-clean data dvc-setup

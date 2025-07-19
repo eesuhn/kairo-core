@@ -1,5 +1,5 @@
 import justsdk
-import os
+import argparse
 
 from src.data_handler import DataHandler
 
@@ -42,8 +42,23 @@ def inspect_local_dataset(name, split="train", n=3) -> None:
 
 
 if __name__ == "__main__":
-    dataset_name = os.getenv("DS", "eriktks/conll2003")
-    split = os.getenv("S", "train")
-    num_examples = int(os.getenv("N", "3"))
+    parser = argparse.ArgumentParser(description="Inspect a local NER dataset.")
+    parser.add_argument(
+        "--dataset", type=str, required=True, help="Name of the dataset to inspect."
+    )
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="train",
+        choices=["train", "validation", "test"],
+        help="Split of the dataset to inspect.",
+    )
+    parser.add_argument(
+        "--num",
+        type=int,
+        default=3,
+        help="Number of examples to display.",
+    )
+    args = parser.parse_args()
 
-    inspect_local_dataset(name=dataset_name, split=split, n=num_examples)
+    inspect_local_dataset(name=args.dataset, split=args.split, n=args.num)
