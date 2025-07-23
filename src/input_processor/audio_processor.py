@@ -1,7 +1,6 @@
 import justsdk
 import torch
 
-from config._constants import MODEL_DIR
 from config._constants import HF_READ_ONLY_TOKEN
 from faster_whisper import WhisperModel
 from pathlib import Path
@@ -52,7 +51,8 @@ class AudioProcessorConfig:
     )
 
     def __post_init__(self) -> None:
-        self.whisper_params["download_root"] = str(MODEL_DIR / self.whisper_model_name)
+        # self.whisper_params["download_root"] = str(MODEL_DIR / self.whisper_model_name)
+        pass
 
 
 class AudioProcessor:

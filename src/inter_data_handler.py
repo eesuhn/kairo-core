@@ -24,7 +24,10 @@ class InterDataHandler:
 
             for dataset in datasets:
                 name = dataset["name"]
-                output_path = INTER_DATA_DIR / name
+
+                # Use custom `dir` if specified, otherwise use dataset name
+                dir_name = dataset.get("dir", name)
+                output_path = INTER_DATA_DIR / dir_name
 
                 if output_path.exists():
                     status = "exists", justsdk.Fore.GREEN
@@ -32,7 +35,9 @@ class InterDataHandler:
                     self._download_dataset(dataset, output_path)
                     status = "downloaded", justsdk.Fore.MAGENTA
 
-                self._print_ds_status(name, *status)
+                # Display both dataset name and directory if they differ
+                display_name = name if dir_name == name else f"{dir_name} <- {name}"
+                self._print_ds_status(display_name, *status)
 
     def _download_dataset(self, dataset: dict, output_path: Path) -> None:
         """

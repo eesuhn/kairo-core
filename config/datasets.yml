@@ -4,6 +4,14 @@ ner:
   - name: eesuhn/crossner-science
   - name: eesuhn/crossner-literature
 
-# summary:
-#   - name: allenai/scitldr
-#   - name: midas/semeval2017
+summary:
+  # - name: allenai/scitldr
+  #   config: Abstract
+  # - name: csebuetnlp/xlsum
+  #   config: english
+  - name: sobamchan/aclsum
+    config: extractive
+    dir: sobamchan/aclsum-extractive
+  - name: sobamchan/aclsum
+    config: abstractive
+    dir: sobamchan/aclsum-abstractive
