@@ -1,8 +1,10 @@
+# NOTE: Do not simply change the order
+
 ner:
   - name: eriktks/conll2003
   - name: eesuhn/crossner-ai
-  - name: eesuhn/crossner-science
   - name: eesuhn/crossner-literature
+  - name: eesuhn/crossner-science
 
 summary:
   # - name: allenai/scitldr

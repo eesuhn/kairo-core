@@ -2,7 +2,7 @@ import justsdk
 import platform
 
 from typing import Optional
-from config._constants import CONFIG_DIR, INTER_DATA_DIR
+from configs._constants import CONFIG_DIR, INTER_DATA_DIR
 from datasets import load_dataset, DatasetDict, load_from_disk
 from pathlib import Path
 

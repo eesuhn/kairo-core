@@ -1,0 +1,60 @@
+PER:
+  - PER
+  - person
+  - researcher
+  - writer
+  - scientist
+ORG:
+  - ORG
+  - organisation
+  - organization
+  - university
+LOC:
+  - LOC
+  - location
+  - country
+MISC:
+  - MISC
+  - misc
+field:
+  - field
+task:
+  - task
+product:
+  - product
+algorithm:
+  - algorithm
+metrics:
+  - metrics
+programlang:
+  - programlang
+conference:
+  - conference
+book:
+  - book
+award:
+  - award
+poem:
+  - poem
+event:
+  - event
+magazine:
+  - magazine
+literarygenre:
+  - literarygenre
+discipline:
+  - discipline
+enzyme:
+  - enzyme
+protein:
+  - protein
+chemicalelement:
+  - chemicalelement
+chemicalcompound:
+  - chemicalcompound
+astronomicalobject:
+  - astronomicalobject
+academicjournal:
+  - academicjournal
+theory:
+  - theory

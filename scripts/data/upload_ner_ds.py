@@ -10,7 +10,7 @@ from datasets import (
     Value,
 )
 from huggingface_hub import HfApi, login
-from config._constants import CONFIG_DIR, RAW_DATA_DIR
+from configs._constants import CONFIG_DIR, RAW_DATA_DIR
 from pathlib import Path
 
 

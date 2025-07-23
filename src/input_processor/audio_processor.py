@@ -1,7 +1,7 @@
 import justsdk
 import torch
 
-from config._constants import HF_READ_ONLY_TOKEN
+from configs._constants import HF_READ_ONLY_TOKEN
 from faster_whisper import WhisperModel
 from pathlib import Path
 from pyannote.audio import Pipeline
