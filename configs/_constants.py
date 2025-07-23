@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT_PATH = Path.cwd()
-CONFIG_DIR = ROOT_PATH / "config"
+CONFIGS_DIR = ROOT_PATH / "configs"
 DATA_DIR = ROOT_PATH / "data"
 INTER_DATA_DIR = DATA_DIR / "interim"
 RAW_DATA_DIR = DATA_DIR / "raw"

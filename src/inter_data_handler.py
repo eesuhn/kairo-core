@@ -2,13 +2,13 @@ import justsdk
 import platform
 
 from typing import Optional
-from configs._constants import CONFIG_DIR, INTER_DATA_DIR
+from configs._constants import CONFIGS_DIR, INTER_DATA_DIR
 from datasets import load_dataset, DatasetDict, load_from_disk
 from pathlib import Path
 
 
 class InterDataHandler:
-    TARGET_DATA_CONFIG = CONFIG_DIR / "datasets.yml"
+    TARGET_DATA_CONFIG = CONFIGS_DIR / "datasets.yml"
 
     def __init__(self):
         self._dataset_cache: dict = {}

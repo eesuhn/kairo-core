@@ -10,13 +10,13 @@ from datasets import (
     Value,
 )
 from huggingface_hub import HfApi, login
-from configs._constants import CONFIG_DIR, RAW_DATA_DIR
+from configs._constants import CONFIGS_DIR, RAW_DATA_DIR
 from pathlib import Path
 
 
 class UploadNerDataset:
     def __init__(self) -> None:
-        self.domain_labels = justsdk.read_file(CONFIG_DIR / "ner" / "labels.yml")
+        self.domain_labels = justsdk.read_file(CONFIGS_DIR / "ner" / "labels.yml")
 
     def _read_conll_file(self, filepath: Path, label_to_id: dict) -> tuple:
         """Read CoNLL format file."""
