@@ -15,4 +15,4 @@ NB_PATH = ROOT_PATH / "notebooks"
 REPORTS_DIR = ROOT_PATH / "reports"
 
 load_dotenv()
-HF_TOKEN = os.getenv("HF_TOKEN")
+HF_READ_ONLY_TOKEN = os.getenv("HF_READ_ONLY_TOKEN")

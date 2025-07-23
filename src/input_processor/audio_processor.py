@@ -2,7 +2,7 @@ import justsdk
 import torch
 
 from config._constants import MODEL_DIR
-from config._constants import HF_TOKEN
+from config._constants import HF_READ_ONLY_TOKEN
 from faster_whisper import WhisperModel
 from pathlib import Path
 from pyannote.audio import Pipeline
@@ -19,7 +19,7 @@ class AudioProcessorConfig:
             "compute_type": "int8",
             "num_workers": 2,
             # "download_root":  # NOTE: Set in `__post_init__`
-            "local_files_only": True,  # NOTE: Set to `False` if the local model is not available
+            # "local_files_only": True,  # NOTE: Just cache it in the default way
         }
     )
     whisper_transcribe_params: dict = field(
@@ -103,11 +103,11 @@ class AudioProcessor:
 
     def _init_diarization_pipeline(self) -> Pipeline:
         try:
-            if HF_TOKEN is None:
+            if HF_READ_ONLY_TOKEN is None:
                 raise ValueError("Hugging Face token is not set.")
             pipeline = Pipeline.from_pretrained(
                 self.acp.diarization_model_name,
-                use_auth_token=HF_TOKEN,
+                use_auth_token=HF_READ_ONLY_TOKEN,
             )
             pipeline.instantiate(self.acp.diarization_param)
 

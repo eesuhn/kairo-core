@@ -1,6 +1,4 @@
 ner:
-  - name: DFKI-SLT/few-nerd
-    config: supervised
   - name: eriktks/conll2003
   - name: eesuhn/crossner-ai
   - name: eesuhn/crossner-science
