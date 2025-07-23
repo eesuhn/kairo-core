@@ -2,6 +2,8 @@ import sys
 import justsdk
 import torch
 import numpy as np
+import signal
+import os
 
 from ..inter_data_handler import InterDataHandler
 from configs._constants import CONFIGS_DIR
@@ -25,6 +27,10 @@ class NerTrainer:
         self.config = config
         self.idh = InterDataHandler()
 
+        if self.config.device != "cuda":
+            # NOTE: Disable parallelism for tokenizers to avoid issues with CPU
+            os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
         if not self.config.model_dir.exists():
             self.config.model_dir.mkdir(parents=True, exist_ok=True)
 
@@ -46,10 +52,14 @@ class NerTrainer:
         self.optimizer = self._create_optimizer()
 
         # Training state
+        self.pin_memory: bool = True if self.config.device == "cuda" else False
         self.global_step = 0
         self.best_f1 = 0.0
         self.interrupted = False
         self.patience_count = 0
+
+        # Listen for interrupts
+        signal.signal(signal.SIGINT, self._signal_handler)
 
         self._remap_ds()
 
@@ -59,7 +69,7 @@ class NerTrainer:
             batch_size=self.config.batch_size,
             shuffle=True,
             num_workers=self.config.num_workers,
-            pin_memory=True,
+            pin_memory=self.pin_memory,
         )
         num_training_steps = len(train_dl) * self.config.epochs
         self.scheduler = self._create_scheduler(num_training_steps)
@@ -141,7 +151,7 @@ class NerTrainer:
             batch_size=self.config.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
-            pin_memory=True,
+            pin_memory=self.pin_memory,
         )
         self.model.eval()
         all_preds = []
@@ -195,11 +205,15 @@ class NerTrainer:
 
         return res
 
+    def _signal_handler(self, signum, frame) -> None:
+        justsdk.print_warning("Training interrupted...")
+        self.interrupted = True
+
     def _save_checkpoint(self, is_best: bool = False) -> None:
         if self.interrupted:
             filename = f"interrupted_checkpoint_{self.global_step}.pt"
         elif is_best:
-            filename = "best_checkpoint.pt"
+            filename = "best_model.pt"
         else:
             filename = f"checkpoint_{self.global_step}.pt"
 

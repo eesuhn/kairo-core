@@ -211,3 +211,6 @@ __marimo__/
 # DVCs
 /models
 /data
+
+# Logs
+!reports/**/*.log
