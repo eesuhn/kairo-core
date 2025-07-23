@@ -58,21 +58,26 @@ def inspect_local_dataset(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Inspect a local dataset.")
-    parser.add_argument("dataset", type=str, help="Name of the dataset to inspect.")
     parser.add_argument(
-        "datatype",
+        "--dataset", type=str, required=True, help="Name of the dataset to inspect."
+    )
+    parser.add_argument(
+        "--datatype",
         choices=["ner", "sum"],
+        required=True,
         help="Type of dataset to inspect.",
     )
     parser.add_argument(
-        "split",
+        "--split",
         type=str,
+        default="train",
         choices=["train", "validation", "test"],
         help="Split of the dataset to inspect.",
     )
     parser.add_argument(
-        "num",
+        "--num",
         type=int,
+        default=3,
         help="Number of examples to display.",
     )
     args = parser.parse_args()
