@@ -42,12 +42,13 @@ class NerTrainer:
             self.config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         # Init wandb
-        wandb.init(
-            project="kairo-core",
-            config=vars(self.config),
-            dir=REPORTS_NER_DIR,
-            name=f"ner_{self.config.base_model_name.replace('/', '_')}",
-        )
+        if self.config.use_wandb:
+            wandb.init(
+                project="kairo-core",
+                config=vars(self.config),
+                dir=REPORTS_NER_DIR,
+                name=f"ner_{self.config.base_model_name.replace('/', '_')}",
+            )
 
         self.all_ds = self.idh.list_datasets_by_category("ner")
         self.uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
@@ -97,14 +98,15 @@ class NerTrainer:
         justsdk.print_info(f"  Total training steps: {num_training_steps}")
 
         # Log initial metrics
-        wandb.log(
-            {
-                "train/total_examples": len(self.train_dataset),
-                "train/total_epochs": self.config.epochs,
-                "train/batch_size": self.config.batch_size,
-                "train/total_steps": num_training_steps,
-            }
-        )
+        if self.config.use_wandb:
+            wandb.log(
+                {
+                    "train/total_examples": len(self.train_dataset),
+                    "train/total_epochs": self.config.epochs,
+                    "train/batch_size": self.config.batch_size,
+                    "train/total_steps": num_training_steps,
+                }
+            )
 
         # Training loop...
         for epoch in range(self.config.epochs):
@@ -147,15 +149,16 @@ class NerTrainer:
                     avg_loss = epoch_loss / (step + 1)
                     progress_bar.set_postfix(loss=avg_loss)
 
-                    wandb.log(
-                        {
-                            "train/loss": avg_loss,
-                            "train/learning_rate": self.scheduler.get_last_lr()[0],
-                            "train/global_step": self.global_step,
-                            "train/epoch": epoch + 1,
-                        },
-                        step=self.global_step,
-                    )
+                    if self.config.use_wandb:
+                        wandb.log(
+                            {
+                                "train/loss": avg_loss,
+                                "train/learning_rate": self.scheduler.get_last_lr()[0],
+                                "train/global_step": self.global_step,
+                                "train/epoch": epoch + 1,
+                            },
+                            step=self.global_step,
+                        )
 
                 # Evaluate
                 if self.eval_dataset and self.global_step % self.config.eval_steps == 0:
@@ -175,11 +178,13 @@ class NerTrainer:
         if self.interrupted:
             self._save_checkpoint()
             justsdk.print_success("Training interrupted, saving state...")
-            wandb.finish()
+            if self.config.use_wandb:
+                wandb.finish()
             sys.exit(0)  # A bit brutal but effective
 
-        self._save_wandb_artifacts()
-        wandb.finish()
+        if self.config.use_wandb:
+            self._save_wandb_artifacts()
+            wandb.finish()
 
     def evaluate(self) -> dict:
         eval_dl = DataLoader(
@@ -239,26 +244,27 @@ class NerTrainer:
         justsdk.print_info(f"  Precision: {res['overall_precision']:.4f}")
         justsdk.print_info(f"  Recall: {res['overall_recall']:.4f}")
 
-        wandb.log(
-            {
-                "eval/loss": res["loss"],
-                "eval/f1": res["overall_f1"],
-                "eval/precision": res["overall_precision"],
-                "eval/recall": res["overall_recall"],
-                "eval/global_step": self.global_step,
-            },
-            step=self.global_step,
-        )
+        if self.config.use_wandb:
+            wandb.log(
+                {
+                    "eval/loss": res["loss"],
+                    "eval/f1": res["overall_f1"],
+                    "eval/precision": res["overall_precision"],
+                    "eval/recall": res["overall_recall"],
+                    "eval/global_step": self.global_step,
+                },
+                step=self.global_step,
+            )
 
-        if "classification_report" in res:
-            for label, metrics in res["classification_report"].items():
-                if isinstance(metrics, dict):
-                    for metric_name, value in metrics.items():
-                        if isinstance(value, (int, float)):
-                            wandb.log(
-                                {f"eval/{label}_{metric_name}": value},
-                                step=self.global_step,
-                            )
+            if "classification_report" in res:
+                for label, metrics in res["classification_report"].items():
+                    if isinstance(metrics, dict):
+                        for metric_name, value in metrics.items():
+                            if isinstance(value, (int, float)):
+                                wandb.log(
+                                    {f"eval/{label}_{metric_name}": value},
+                                    step=self.global_step,
+                                )
 
         return res
 
@@ -286,7 +292,7 @@ class NerTrainer:
         torch.save(checkpoint, checkpoint_path)
         justsdk.print_success(f"Checkpoint saved to {checkpoint_path}")
 
-        if is_best:
+        if self.config.use_wandb and is_best:
             wandb.log({"checkpoint/best_f1": self.best_f1}, step=self.global_step)
 
     def _check_early_stop(self, current_f1: float) -> bool:
@@ -298,23 +304,26 @@ class NerTrainer:
             self.patience_count = 0
             self._save_checkpoint(is_best=True)
 
-            wandb.log(
-                {
-                    "train/best_f1": self.best_f1,
-                    "train/patience_count": self.patience_count,
-                },
-                step=self.global_step,
-            )
+            if self.config.use_wandb:
+                wandb.log(
+                    {
+                        "train/best_f1": self.best_f1,
+                        "train/patience_count": self.patience_count,
+                    },
+                    step=self.global_step,
+                )
             return False
         else:
             self.patience_count += 1
-            wandb.log(
-                {"train/patience_count": self.patience_count}, step=self.global_step
-            )
+            if self.config.use_wandb:
+                wandb.log(
+                    {"train/patience_count": self.patience_count}, step=self.global_step
+                )
 
             if self.patience_count >= self.config.early_stopping_patience:
                 justsdk.print_info("Early stopping triggered")
-                wandb.log({"train/early_stopped": True}, step=self.global_step)
+                if self.config.use_wandb:
+                    wandb.log({"train/early_stopped": True}, step=self.global_step)
                 return True
             return False
 
@@ -403,6 +412,9 @@ class NerTrainer:
         return AdamW(optimizer_grouped_parameters, lr=self.config.learning_rate)
 
     def _save_wandb_artifacts(self) -> None:
+        if not self.config.use_wandb:
+            return
+
         try:
             model_artifact = wandb.Artifact(name="kairo_ner", type="model")
 

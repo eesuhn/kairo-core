@@ -23,6 +23,7 @@ class NerScript:
             batch_size=self.args.batch_size,
             epochs=self.args.epochs,
             learning_rate=self.args.learning_rate,
+            use_wandb=self.args.use_wandb,
         )
         trainer = NerTrainer(config)
         try:
@@ -76,6 +77,11 @@ class NerScript:
             type=float,
             default=1e-4,  # NOTE: Maybe default to `5e-5`?
             help="Learning rate for the optimizer.",
+        )
+        parser.add_argument(
+            "--use-wandb",
+            action="store_true",
+            help="Use Weights & Biases for logging.",
         )
         return parser
 
