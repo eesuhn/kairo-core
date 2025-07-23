@@ -28,6 +28,9 @@ class NerTrainer:
         if not self.config.model_dir.exists():
             self.config.model_dir.mkdir(parents=True, exist_ok=True)
 
+        if not self.config.checkpoint_dir.exists():
+            self.config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
         self.all_ds = self.idh.list_datasets_by_category("ner")
         self.uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
 
@@ -119,15 +122,14 @@ class NerTrainer:
                         return
 
                 if self.global_step % self.config.save_steps == 0:
-                    pass
-                    # TODO: Save checkpoint here
+                    self._save_checkpoint()
 
             if self.eval_dataset and not self.interrupted:
                 justsdk.print_info(f"End of epoch {epoch + 1}, evaluating...")
                 self.evaluate()
 
         if self.interrupted:
-            # TODO: Save checkpoint with interrupted state
+            self._save_checkpoint()
             justsdk.print_success("Training interrupted, saving state...")
             sys.exit(0)  # A bit brutal but effective
 
@@ -191,6 +193,26 @@ class NerTrainer:
 
         return res
 
+    def _save_checkpoint(self, is_best: bool = False) -> None:
+        if self.interrupted:
+            filename = f"interrupted_checkpoint_{self.global_step}.pt"
+        elif is_best:
+            filename = "best_checkpoint.pt"
+        else:
+            filename = f"checkpoint_{self.global_step}.pt"
+
+        checkpoint_path = self.config.checkpoint_dir / filename
+        checkpoint = {
+            "model_state_dict": self.model.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "scheduler_state_dict": self.scheduler.state_dict(),
+            "global_step": self.global_step,
+            "best_f1": self.best_f1,
+            "label_map": self.label_map,
+        }
+        torch.save(checkpoint, checkpoint_path)
+        justsdk.print_success(f"Checkpoint saved to {checkpoint_path}")
+
     def _check_early_stop(self, current_f1: float) -> bool:
         """
         Check if early stopping criteria are met.
@@ -198,7 +220,7 @@ class NerTrainer:
         if current_f1 > self.best_f1 + self.config.early_stopping_delta:
             self.best_f1 = current_f1
             self.patience_count = 0
-            # TODO: Save checkpoint here
+            self._save_checkpoint(is_best=True)
             return False
         else:
             self.patience_count += 1
