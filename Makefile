@@ -17,7 +17,7 @@ hf-data:
 	@uv run -m src.inter_data_handler
 
 inspect-ds:
-	@uv run -m scripts.inspect_ds $(filter-out $@,$(MAKECMDGOALS))
+	@uv run -m scripts.data.inspect_ds $(filter-out $@,$(MAKECMDGOALS))
 
 upgrade:
 	@uv sync --upgrade
