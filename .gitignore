@@ -214,3 +214,6 @@ __marimo__/
 
 # Logs
 !reports/**/*.log
+
+# wandb
+wandb/

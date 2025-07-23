@@ -43,10 +43,10 @@ class NerTrainer:
 
         # Init wandb
         wandb.init(
-            project="kairo-ner",
+            project="kairo-core",
             config=vars(self.config),
             dir=REPORTS_NER_DIR,
-            name=f"ner_training_{self.config.base_model_name.replace('/', '_')}",
+            name=f"ner_{self.config.base_model_name.replace('/', '_')}",
         )
 
         self.all_ds = self.idh.list_datasets_by_category("ner")
@@ -404,14 +404,13 @@ class NerTrainer:
 
     def _save_wandb_artifacts(self) -> None:
         try:
-            model_artifact = wandb.Artifact(
-                name="kairo_ner", type="model", description="kairo-ner"
-            )
+            model_artifact = wandb.Artifact(name="kairo_ner", type="model")
 
-            if (self.config.checkpoint_dir / "best_model.pt").exists():
-                model_artifact.add_file(
-                    str(self.config.checkpoint_dir / "best_model.pt")
-                )
+            # NOTE: Not necessary to upload the model
+            # if (self.config.checkpoint_dir / "best_model.pt").exists():
+            #     model_artifact.add_file(
+            #         str(self.config.checkpoint_dir / "best_model.pt")
+            #     )
 
             label_map_artifact = {
                 "label_to_id": self.label_to_id,
