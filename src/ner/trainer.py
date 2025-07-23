@@ -1,5 +1,7 @@
+import sys
 import justsdk
 import torch
+import numpy as np
 
 from ..inter_data_handler import InterDataHandler
 from configs._constants import CONFIGS_DIR
@@ -8,6 +10,14 @@ from .config import NerConfig
 from transformers import BertTokenizer, get_linear_schedule_with_warmup
 from torch.utils.data import Dataset, DataLoader
 from torch.optim import AdamW
+from tqdm import tqdm
+from torch import nn
+from seqeval.metrics import (
+    f1_score,
+    precision_score,
+    recall_score,
+    classification_report,
+)
 
 
 class NerTrainer:
@@ -33,25 +43,27 @@ class NerTrainer:
         # Training state
         self.global_step = 0
         self.best_f1 = 0.0
+        self.interrupted = False
+        self.patience_count = 0
 
         self._remap_ds()
 
     def train(self, resume: bool = False) -> None:
-        dl = DataLoader(
+        train_dl = DataLoader(
             self.train_dataset,
             batch_size=self.config.batch_size,
             shuffle=True,
             num_workers=self.config.num_workers,
             pin_memory=True,
         )
-        num_training_steps = len(dl) * self.config.epochs
+        num_training_steps = len(train_dl) * self.config.epochs
         self.scheduler = self._create_scheduler(num_training_steps)
 
         # TODO: Support resume training
         if resume:
             pass
 
-        justsdk.print_info("Starting training...")
+        justsdk.print_info("Starting training...", newline_before=True)
         justsdk.print_info(f"  No. of examples: {len(self.train_dataset)}")
         justsdk.print_info(f"  No. of epochs: {self.config.epochs}")
         justsdk.print_info(f"  Batch size: {self.config.batch_size}")
@@ -59,7 +71,141 @@ class NerTrainer:
 
         # Training loop...
         for epoch in range(self.config.epochs):
-            pass
+            if self.interrupted:
+                break
+            self.model.train()
+
+            epoch_loss = 0.0
+            progress_bar = tqdm(
+                train_dl, desc=f"Epoch {epoch + 1}/{self.config.epochs}"
+            )
+            for step, batch in enumerate(progress_bar):
+                if self.interrupted:
+                    break
+
+                # NOTE: Move batch to CUDA if available
+                batch = {k: v.to(self.config.device) for k, v in batch.items()}
+
+                # Forward pass
+                outputs = self.model(**batch)
+                loss: torch.Tensor = outputs["loss"]
+
+                # Backward pass
+                loss.backward()
+
+                # Gradient clipping
+                nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.config.max_grad_norm
+                )
+
+                self.optimizer.step()
+                self.scheduler.step()
+                self.optimizer.zero_grad()
+
+                epoch_loss += loss.item()
+                self.global_step += 1
+
+                # Log metrics
+                if self.global_step % self.config.logging_steps == 0:
+                    avg_loss = epoch_loss / (step + 1)
+                    progress_bar.set_postfix(loss=avg_loss)
+
+                # Evaluate
+                if self.eval_dataset and self.global_step % self.config.eval_steps == 0:
+                    eval_results = self.evaluate()
+
+                    # Check for early stopping
+                    if self._check_early_stop(eval_results["overall_f1"]):
+                        return
+
+                if self.global_step % self.config.save_steps == 0:
+                    pass
+                    # TODO: Save checkpoint here
+
+            if self.eval_dataset and not self.interrupted:
+                justsdk.print_info(f"End of epoch {epoch + 1}, evaluating...")
+                self.evaluate()
+
+        if self.interrupted:
+            # TODO: Save checkpoint with interrupted state
+            justsdk.print_success("Training interrupted, saving state...")
+            sys.exit(0)  # A bit brutal but effective
+
+    def evaluate(self) -> dict:
+        eval_dl = DataLoader(
+            self.eval_dataset,
+            batch_size=self.config.batch_size,
+            shuffle=False,
+            num_workers=self.config.num_workers,
+            pin_memory=True,
+        )
+        self.model.eval()
+        all_preds = []
+        all_labels = []
+        eval_loss = 0.0
+
+        with torch.no_grad():
+            for batch in tqdm(eval_dl, desc="Evaluating..."):
+                batch = {k: v.to(self.config.device) for k, v in batch.items()}
+                outputs = self.model(**batch)
+                if "loss" in outputs:
+                    eval_loss += outputs["loss"].item()
+
+                # NOTE: Might be different if CRF is used
+                logits = outputs["logits"]
+                preds = torch.argmax(logits, dim=-1)
+                preds = preds.cpu().numpy()  # Convert to CPU for processing
+
+                labels = batch["labels"].cpu().numpy()
+                for pred, label in zip(preds, labels):
+                    valid_i = label != NerConfig.ignore_index
+                    valid_preds = (
+                        pred[valid_i]
+                        if isinstance(pred, np.ndarray)
+                        else [p for p, v in zip(pred, valid_i) if v]
+                    )
+                    valid_labels = label[valid_i]
+
+                    all_preds.extend(valid_preds)
+                    all_labels.extend(valid_labels)
+
+        avg_loss = eval_loss / len(eval_dl)
+        true_labels = [[self.id_to_label[label] for label in all_labels]]
+        pred_labels = [[self.id_to_label[pred] for pred in all_preds]]
+
+        res = {
+            "loss": avg_loss,
+            "overall_f1": f1_score(true_labels, pred_labels),
+            "overall_precision": precision_score(true_labels, pred_labels),
+            "overall_recall": recall_score(true_labels, pred_labels),
+            "classification_report": classification_report(
+                true_labels, pred_labels, output_dict=True
+            ),
+        }
+
+        justsdk.print_info("Evaluation results", newline_before=True)
+        justsdk.print_info(f"  Loss: {res['loss']:.4f}")
+        justsdk.print_info(f"  F1: {res['overall_f1']:.4f}")
+        justsdk.print_info(f"  Precision: {res['overall_precision']:.4f}")
+        justsdk.print_info(f"  Recall: {res['overall_recall']:.4f}")
+
+        return res
+
+    def _check_early_stop(self, current_f1: float) -> bool:
+        """
+        Check if early stopping criteria are met.
+        """
+        if current_f1 > self.best_f1 + self.config.early_stopping_delta:
+            self.best_f1 = current_f1
+            self.patience_count = 0
+            # TODO: Save checkpoint here
+            return False
+        else:
+            self.patience_count += 1
+            if self.patience_count >= self.config.early_stopping_patience:
+                justsdk.print_info("Early stopping triggered")
+                return True
+            return False
 
     def _create_scheduler(self, num_training_steps: int):
         return get_linear_schedule_with_warmup(

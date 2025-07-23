@@ -20,6 +20,16 @@ class NerConfig:
     num_workers: int = 4  # NOTE: Prob. 8 if your device is a chad
     weight_decay: float = 0.01
     warmup_steps: int = 1000  # NOTE: Should set to 10% of total training steps
+    max_grad_norm: float = 1.0  # Default for gradient clipping
+
+    # Evaluation
+    logging_steps: int = 100
+    eval_steps: int = 500
+    save_steps: int = 2000
+
+    # Early stopping
+    early_stopping_delta: float = 0.001  # Early stopping threshold
+    early_stopping_patience: int = 3
 
     # Input
     max_length: int = 128

@@ -1,3 +1,5 @@
+import sys
+import justsdk
 import torch
 import numpy as np
 import argparse
@@ -23,7 +25,14 @@ class NerScript:
             learning_rate=self.args.learning_rate,
         )
         trainer = NerTrainer(config)
-        trainer.train()
+        try:
+            trainer.train()
+        except KeyboardInterrupt:
+            justsdk.print_warning("Training interrupted by user.")
+            sys.exit(0)  # XXX: Is this exit necessary???
+        except Exception as e:
+            justsdk.print_error(f"Training failed: {e}")
+            raise
 
     def _init_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(description="Train NER model")
