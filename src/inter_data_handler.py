@@ -51,7 +51,7 @@ class InterDataHandler:
         print(f"  - {name} ({color}{status}{justsdk.Fore.RESET})")
 
     def load_dataset(
-        self, dataset_name: str, use_cache: bool = True
+        self, dataset_name: str, use_cache: bool = True, quiet: bool = False
     ) -> Optional[DatasetDict]:
         """
         Load a dataset from local storage with optional caching
@@ -66,7 +66,8 @@ class InterDataHandler:
             DatasetDict if found, None otherwise
         """
         if use_cache and dataset_name in self._dataset_cache:
-            justsdk.print_info(f"Loading cached dataset: {dataset_name}")
+            if not quiet:
+                justsdk.print_info(f"Loading cached dataset: {dataset_name}")
             return self._dataset_cache[dataset_name]
 
         dataset_path = INTER_DATA_DIR / dataset_name
@@ -76,7 +77,8 @@ class InterDataHandler:
             return None
 
         try:
-            justsdk.print_info(f"Loading dataset from disk: {dataset_name}")
+            if not quiet:
+                justsdk.print_info(f"Loading dataset from disk: {dataset_name}")
             # dataset = DatasetDict.load_from_disk(
             #     str(dataset_path)
             # )  # NOTE: Only returns `DatasetDict`
