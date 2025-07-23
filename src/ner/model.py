@@ -21,7 +21,6 @@ class NerModel(nn.Module):
         self.bert_config = BertConfig.from_pretrained(model_name)
         self.bert_config.output_hidden_states = True
         self.bert_model = BertModel.from_pretrained(model_name, config=self.bert_config)
-        self.bert_model.to(NerConfig.device)  # XXX: CUDA here?
 
         # Classification head
         self.classifier = nn.Linear(

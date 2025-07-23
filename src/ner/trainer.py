@@ -7,7 +7,7 @@ from ..inter_data_handler import InterDataHandler
 from configs._constants import CONFIGS_DIR
 from .model import NerModel
 from .config import NerConfig
-from transformers import BertTokenizer, get_linear_schedule_with_warmup
+from transformers import BertTokenizerFast, get_linear_schedule_with_warmup
 from torch.utils.data import Dataset, DataLoader
 from torch.optim import AdamW
 from tqdm import tqdm
@@ -40,7 +40,9 @@ class NerTrainer:
         self.id_to_label = {i: label for i, label in enumerate(self.uni_labels)}
 
         self.model = NerModel(num_labels=len(self.uni_labels))
-        self.tokenizer = BertTokenizer.from_pretrained(self.config.base_model_name)
+        self.model.to(self.config.device)
+
+        self.tokenizer = BertTokenizerFast.from_pretrained(self.config.base_model_name)
         self.optimizer = self._create_optimizer()
 
         # Training state
@@ -318,7 +320,7 @@ class NerDataset(Dataset):
     def __init__(
         self,
         data: list,
-        tokenizer: BertTokenizer,
+        tokenizer: BertTokenizerFast,
     ) -> None:
         self.data = data
         self.tokenizer = tokenizer
