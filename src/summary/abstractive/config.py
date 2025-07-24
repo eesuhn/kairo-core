@@ -25,22 +25,32 @@ class AbsSumConfig:
     eval_steps: int = 20
     save_steps: int = 1000
     eval_batch_size: int = 8
-    generation_max_length: int = 128
-    generation_num_beams: int = 2
+    eval_max_length: int = 128
+    eval_num_beams: int = 2
 
     # Early stopping
     early_stopping_delta: float = 0.001  # Early stopping threshold
     early_stopping_patience: int = 3
 
     # Data processing
-    max_length: int = 128
+    data_max_length: int = 128
 
     # Output
     model_dir: Path = MODEL_DIR / "summary" / "abstractive"
 
+    # Generation
+    length_penalty: float = 1.4
+    repetition_penalty: float = 1.6
+    no_repeat_ngram_size: int = 3
+    early_stopping: bool = False
+    gen_batch_size: int = 8
+    gen_max_length: int = 200  # TODO: Make this dynamic based on input length
+    gen_min_length: int = 20  # TODO: Make this dynamic based on input length
+    gen_num_beams: int = 4
+
     # Others
     seed: int = 42
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
-    quite: bool = False
+    quiet: bool = False
     use_wandb: bool = False
     upload_model_wandb: bool = False

@@ -55,14 +55,14 @@ class AbsSumDataset(Dataset):
             document,
             truncation=True,
             padding="max_length",
-            max_length=self.config.max_length,
+            max_length=self.config.data_max_length,
             return_tensors="pt",
         )
         targets = self.tokenizer(
             summary,
             truncation=True,
             padding="max_length",
-            max_length=self.config.max_length,
+            max_length=self.config.data_max_length,
             return_tensors="pt",
         )
 
@@ -82,7 +82,7 @@ class AbsSumTrainer:
 
     def __init__(self, config: AbsSumConfig) -> None:
         self.config = config
-        self.idh = InterDataHandler(quiet=self.config.quite)
+        self.idh = InterDataHandler(quiet=self.config.quiet)
 
         if self.config.device != "cuda":
             # NOTE: Disable parallelism for tokenizers to avoid issues with CPU
@@ -258,8 +258,8 @@ class AbsSumTrainer:
                 generated_ids = self.model.model.generate(
                     input_ids=batch["input_ids"],
                     attention_mask=batch["attention_mask"],
-                    max_length=self.config.generation_max_length,
-                    num_beams=self.config.generation_num_beams,
+                    max_length=self.config.eval_max_length,
+                    num_beams=self.config.eval_num_beams,
                     early_stopping=True,
                 )
 

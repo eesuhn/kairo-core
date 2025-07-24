@@ -1,10 +1,9 @@
 import justsdk
 import argparse
 
-from src.ner.predictor import NerPredictor, NerEntity
 from src.input_processor import InputProcessor
 from typing import Optional
-from src.ner.config import NerConfig
+from src.ner import NerPredictor, NerEntity, NerConfig
 
 
 class NerPredictScript:

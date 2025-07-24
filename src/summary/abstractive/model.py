@@ -12,7 +12,7 @@ class AbsSumModel(nn.Module):
         super().__init__(*args, **kwargs)
 
         self.config = config
-        self.cp = justsdk.ColorPrinter(quiet=self.config.quite)
+        self.cp = justsdk.ColorPrinter(quiet=self.config.quiet)
 
         self.model: T5ForConditionalGeneration = (
             T5ForConditionalGeneration.from_pretrained(self.config.base_model_name)
@@ -39,6 +39,20 @@ class AbsSumModel(nn.Module):
             labels=labels,
             **kwargs,
         )
+        return outputs
+
+    def generate(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        **gen_kwargs,
+    ) -> torch.Tensor:
+        with torch.no_grad():
+            outputs = self.model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                **gen_kwargs,
+            )
         return outputs
 
     def _freeze_t5_encoder(self) -> None:

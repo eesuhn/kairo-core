@@ -40,7 +40,7 @@ class NerPredictor:
         self.config = config
         self.cp = justsdk.ColorPrinter(quiet=self.config.quite)
 
-        self.cp.info(f"Loading NER model from {MODEL_NER_BEST_PATH}")
+        self.cp.info("Loading NER...")
         self.uni_labels, _ = NerHelper.get_uni_label_map()
         self.id_to_label = {i: label for i, label in enumerate(self.uni_labels)}
 
@@ -52,7 +52,7 @@ class NerPredictor:
         self.model.load_state_dict(state_dict)
         self.model.to(self.config.device)
         self.model.eval()  # NOTE: Eval mode to prevent dropout during inference
-        self.cp.success("Loaded NER model")
+        self.cp.success("Loaded NER")
 
         self.tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(
             self.config.base_model_name
