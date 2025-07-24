@@ -218,21 +218,31 @@ class ExtSumPredictor:
     def generate_summary(
         self,
         texts: Union[str, list],
-        max_sentences: int = 10,
+        max_sentences: int = None,
         balanced: bool = True,
         remove_duplicates: bool = True,
         similarity_threshold: float = 0.9,
+        dynamic_length: bool = True,
     ) -> list:
-        """
-        Generate a combined summary from all categories.
+        if max_sentences is None and dynamic_length:
+            if isinstance(texts, str):
+                sentence_count = len(self._split_into_sentences(texts))
+            else:
+                sentence_count = len(texts)
 
-        Args:
-            texts: Input text or list of sentences
-            max_sentences: Maximum sentences to extract
-            balanced: Whether to balance sentences across categories
-            remove_duplicates: Whether to remove duplicate/similar sentences
-            similarity_threshold: Threshold for considering sentences as duplicates
-        """
+            # Dynamic max sentences based on input length
+            # TODO: Abstract these to `ExtSumConfig`
+            if sentence_count < 5:
+                max_sentences = max(1, sentence_count)
+            elif sentence_count < 10:
+                max_sentences = max(3, int(sentence_count * 0.6))
+            elif sentence_count < 20:
+                max_sentences = max(5, int(sentence_count * 0.4))
+            else:
+                max_sentences = max(7, min(21, int(sentence_count * 0.4)))
+        elif max_sentences is None:
+            max_sentences = 10
+
         results, scores = self.predict(texts, return_scores=True)
 
         all_sentences = []

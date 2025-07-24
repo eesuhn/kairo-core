@@ -47,6 +47,7 @@ class AbsSumPredictor:
         preprocess_text: bool = True,
         ensure_capitalized: bool = True,
         ensure_complete_sentence: bool = True,
+        dynamic_length: bool = True,
     ) -> list:
         single_str = isinstance(texts, str)
         if single_str:
@@ -59,28 +60,38 @@ class AbsSumPredictor:
         for i in range(0, len(texts), self.config.gen_batch_size):
             batch_texts: list = texts[i : i + self.config.gen_batch_size]
 
+            batch_gen_configs = []
+            if dynamic_length:
+                for text in batch_texts:
+                    gen_config = self._calculate_dynamic_gen_config(text)
+                    batch_gen_configs.append(gen_config)
+            else:
+                batch_gen_configs = [self.gen_conf] * len(batch_texts)
+
             batch_inputs = self.tokenizer(
                 batch_texts,
                 truncation=True,
                 padding="max_length",
-                max_length=self.config.gen_max_length,
+                max_length=self.config.data_max_length,
                 return_tensors="pt",
             )
 
             input_ids = batch_inputs["input_ids"].to(self.config.device)
             attention_mask = batch_inputs["attention_mask"].to(self.config.device)
 
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    **self.gen_conf,
-                )
+            batch_outputs = []
+            for idx in range(len(batch_texts)):
+                with torch.no_grad():
+                    outputs = self.model.generate(
+                        input_ids=input_ids[idx : idx + 1],
+                        attention_mask=attention_mask[idx : idx + 1],
+                        **batch_gen_configs[idx],
+                    )
+                batch_outputs.append(outputs)
 
-            # Decode outputs
-            for out in range(outputs.shape[0]):  # NOTE: Batch size
+            for out in batch_outputs:
                 summary = self.tokenizer.decode(
-                    outputs[out], skip_special_tokens=True
+                    out[0], skip_special_tokens=True
                 ).strip()
                 summaries.append(summary)
 
@@ -91,3 +102,47 @@ class AbsSumPredictor:
             summaries = [Utils.ensure_complete_sentence(s) for s in summaries]
 
         return summaries[0] if single_str else summaries
+
+    def _calculate_dynamic_gen_config(self, text: str) -> dict:
+        word_count = len(text.split())
+
+        # TODO: Abstract these to `AbsSumConfig`
+        THRESHOLDS = [32, 128, 512]
+        BASE_MIN_RATIO = 0.4
+        BASE_MAX_RATIO = 0.8
+
+        tier = 0
+        for threshold in THRESHOLDS:
+            if word_count >= threshold:
+                tier += 1
+            else:
+                break
+
+        min_ratio = BASE_MIN_RATIO / (2**tier)
+        max_ratio = BASE_MAX_RATIO / (2**tier)
+
+        min_words = max(2, int(word_count * min_ratio))
+        max_words = max(10, int(word_count * max_ratio))
+
+        min_length = int(min_words * 1.2)
+        max_length = int(max_words * 1.2)
+
+        min_length = max(2, min(min_length, 200))
+        max_length = max(10, min(max_length, 400))
+
+        if min_length >= max_length:
+            max_length = min_length + 10
+
+        dynamic_config = self.gen_conf.copy()
+        dynamic_config.update(
+            {
+                "min_length": min_length,
+                "max_length": max_length,
+                "num_beams": 2 if word_count < 50 else self.config.gen_num_beams,
+                "repetition_penalty": 2.0
+                if word_count < 50
+                else self.config.repetition_penalty,
+            }
+        )
+
+        return dynamic_config
