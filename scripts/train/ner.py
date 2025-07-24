@@ -24,6 +24,7 @@ class NerScript:
             epochs=self.args.epochs,
             learning_rate=self.args.learning_rate,
             use_wandb=self.args.use_wandb,
+            upload_model_wandb=self.args.upload_model_wandb,
         )
         trainer = NerTrainer(config)
         try:
