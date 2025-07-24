@@ -12,11 +12,11 @@ class NerConfig:
     freeze_bert_encoder: bool = False
 
     # Training
-    batch_size: int = 32
+    batch_size: int = 128
     epochs: int = 10
     learning_rate: float = 5e-5
     dropout_rate: float = 0.1
-    num_workers: int = 8  # NOTE: Prob. 8 if your device is a chad
+    num_workers: int = 10  # NOTE: Prob. 8 if your device is a chad
     weight_decay: float = 0.01
     warmup_steps: int = 500  # NOTE: Should set to 10% of total training steps
     max_grad_norm: float = 1.0  # Default for gradient clipping

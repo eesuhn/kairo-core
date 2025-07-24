@@ -114,6 +114,9 @@ class NerTrainer:
                 }
             )
 
+        # This should speed things up
+        scaler = torch.amp.GradScaler(device=self.config.device)
+
         # Training loop...
         for epoch in range(self.config.epochs):
             if self.interrupted:
@@ -132,20 +135,22 @@ class NerTrainer:
                 batch = {k: v.to(self.config.device) for k, v in batch.items()}
 
                 # Forward pass
-                outputs = self.model(**batch)
-                loss: torch.Tensor = outputs["loss"]
+                with torch.amp.autocast(device_type=self.config.device):
+                    outputs = self.model(**batch)
+                    loss: torch.Tensor = outputs["loss"]
 
                 # Backward pass
-                loss.backward()
+                scaler.scale(loss).backward()
 
                 # Gradient clipping
                 nn.utils.clip_grad_norm_(
                     self.model.parameters(), self.config.max_grad_norm
                 )
 
-                self.optimizer.step()
+                scaler.step(self.optimizer)
+                scaler.update()
                 self.scheduler.step()
-                self.optimizer.zero_grad()
+                self.optimizer.zero_grad(set_to_none=True)
 
                 epoch_loss += loss.item()
                 self.global_step += 1
