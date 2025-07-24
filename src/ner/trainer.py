@@ -420,7 +420,8 @@ class NerTrainer:
 
             # NOTE: Not necessary to upload the model
             if (
-                self.config.upload_model_wandb
+                self.config.use_wandb
+                and self.config.upload_model_wandb
                 and (self.config.checkpoint_dir / "best_model.pt").exists()
             ):
                 model_artifact.add_file(
