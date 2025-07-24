@@ -34,21 +34,12 @@ class NerModel(nn.Module):
 
         if NerConfig.freeze_bert:
             self._freeze_bert()
-        elif NerConfig.freeze_bert_encoder:
-            self._freeze_bert(encoder=True)
 
         self._init_weights()
 
-    def _freeze_bert(self, encoder: bool = False) -> None:
-        if encoder:
-            self.cp.info("Freezing BERT encoder")
-            for param in self.bert_model.encoder.parameters():
-                param.requires_grad_(False)
-        else:
-            self.cp.info("Freezing whole BERT")
-            # XXX: Is this for real freezing the whole BERT???
-            for param in self.bert_model.parameters():
-                param.requires_grad_(False)
+    def _freeze_bert(self) -> None:
+        for param in self.bert_model.parameters():
+            param.requires_grad_(False)
 
     def _init_weights(self) -> None:
         nn.init.xavier_uniform_(self.classifier.weight)

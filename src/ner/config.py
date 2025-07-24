@@ -9,7 +9,6 @@ from pathlib import Path
 class NerConfig:
     base_model_name: str = "google-bert/bert-base-uncased"
     freeze_bert: bool = False
-    freeze_bert_encoder: bool = False
 
     # Training
     batch_size: int = 128
