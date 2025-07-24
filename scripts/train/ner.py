@@ -7,7 +7,7 @@ import argparse
 from src.ner.trainer import NerConfig, NerTrainer
 
 
-class NerScript:
+class NerTrainScript:
     def __init__(self) -> None:
         # Set random seeds
         seed = NerConfig.seed
@@ -93,5 +93,5 @@ class NerScript:
 
 
 if __name__ == "__main__":
-    ns = NerScript()
-    ns.run()
+    nts = NerTrainScript()
+    nts.run()
