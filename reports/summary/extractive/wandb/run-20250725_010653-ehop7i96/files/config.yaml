@@ -1,0 +1,131 @@
+_wandb:
+    value:
+        cli_version: 0.21.0
+        e:
+            nv2zt5y0avdalvfhc7ogxsgnupuoq4q6:
+                args:
+                    - --use-wandb
+                    - --upload-model-wandb
+                cpu_count: 6
+                cpu_count_logical: 12
+                cudaVersion: "12.5"
+                disk:
+                    /:
+                        total: "1081101176832"
+                        used: "115746140160"
+                email: eason.yihong@gmail.com
+                executable: /home/yilim/kairo-core/.venv/bin/python3
+                git:
+                    commit: 85faba8a14bf2c83906d31d10c0baf1aae023a73
+                    remote: https://github.com/eesuhn/kairo-core.git
+                gpu: NVIDIA GeForce RTX 4050 Laptop GPU
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ada
+                      memoryTotal: "6439305216"
+                      name: NVIDIA GeForce RTX 4050 Laptop GPU
+                      uuid: GPU-d2835a95-6a4b-4458-0ff0-1fb346927c07
+                host: DESKTOP-QO9VCS5
+                memory:
+                    total: "25204797440"
+                os: Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.39
+                program: -m scripts.train.ext_sum
+                python: CPython 3.11.13
+                root: /home/yilim/kairo-core/reports/summary/extractive
+                startedAt: "2025-07-24T17:06:53.664137Z"
+                writerId: nv2zt5y0avdalvfhc7ogxsgnupuoq4q6
+        m: []
+        python_version: 3.11.13
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 49
+                - 51
+                - 53
+                - 71
+                - 105
+            "2":
+                - 1
+                - 5
+                - 11
+                - 49
+                - 51
+                - 53
+                - 71
+                - 105
+            "3":
+                - 2
+                - 13
+                - 16
+                - 61
+            "4": 3.11.13
+            "5": 0.21.0
+            "6": 4.45.2
+            "12": 0.21.0
+            "13": linux-x86_64
+approach_threshold:
+    value: 0.5
+base_model_name:
+    value: allenai/scibert_scivocab_uncased
+batch_size:
+    value: 16
+challenge_threshold:
+    value: 0.5
+class_weights:
+    value: null
+classifier_dropout:
+    value: 0.2
+device:
+    value: cuda
+early_stopping_delta:
+    value: 0.001
+early_stopping_patience:
+    value: 5
+epochs:
+    value: 15
+eval_batch_size:
+    value: 32
+eval_steps:
+    value: 50
+gradient_accumulation_steps:
+    value: 1
+hidden_dropout_prob:
+    value: 0.1
+learning_rate:
+    value: 2e-05
+logging_steps:
+    value: 10
+max_grad_norm:
+    value: 1
+max_length:
+    value: 512
+max_sentences:
+    value: 100
+min_sentences_per_type:
+    value: 1
+model_dir:
+    value: /home/yilim/kairo-core/models/summary/extractive
+num_labels:
+    value: 3
+num_workers:
+    value: 2
+outcome_threshold:
+    value: 0.5
+quiet:
+    value: false
+save_steps:
+    value: 500
+seed:
+    value: 42
+stride:
+    value: 128
+upload_model_wandb:
+    value: true
+use_wandb:
+    value: true
+warmup_steps:
+    value: 200
+weight_decay:
+    value: 0.01

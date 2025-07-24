@@ -115,8 +115,8 @@ class ExtSumTrainer:
         self.config = config
         self.idh = InterDataHandler(quiet=self.config.quiet)
 
-        if self.config.device != "cuda":
-            os.environ["TOKENIZERS_PARALLELISM"] = "false"
+        # if self.config.device != "cuda":
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
         self.config.model_dir.mkdir(parents=True, exist_ok=True)
         self.checkpoint_dir = self.config.model_dir / "checkpoints"
@@ -301,10 +301,15 @@ class ExtSumTrainer:
                     ("approach", approach_preds),
                     ("outcome", outcome_preds),
                 ]:
-                    all_predictions[label_type].extend(preds.cpu().numpy().flatten())
-                    all_labels[label_type].extend(
-                        batch["labels"][label_type].cpu().numpy().flatten()
-                    )
+                    batch_labels = batch["labels"][label_type].cpu().numpy().flatten()
+                    batch_preds = preds.cpu().numpy().flatten()
+
+                    valid_mask = batch_labels != -100
+                    valid_labels = batch_labels[valid_mask]
+                    valid_preds = batch_preds[valid_mask]
+
+                    all_predictions[label_type].extend(valid_preds)
+                    all_labels[label_type].extend(valid_labels)
 
         metrics = {}
         avg_f1 = 0.0
@@ -390,13 +395,41 @@ class ExtSumTrainer:
     def _collate_fn(self, batch: list) -> dict:
         input_ids = torch.stack([item["input_ids"] for item in batch])
         attention_mask = torch.stack([item["attention_mask"] for item in batch])
-        sentence_masks = torch.stack([item["sentence_masks"] for item in batch])
 
-        labels = {
-            "challenge": torch.stack([item["labels"]["challenge"] for item in batch]),
-            "approach": torch.stack([item["labels"]["approach"] for item in batch]),
-            "outcome": torch.stack([item["labels"]["outcome"] for item in batch]),
+        max_sentences = max(item["sentence_masks"].shape[0] for item in batch)
+
+        padded_sentence_masks = []
+        padded_labels = {
+            "challenge": [],
+            "approach": [],
+            "outcome": [],
         }
+
+        for item in batch:
+            num_sentences = item["sentence_masks"].shape[0]
+
+            if num_sentences < max_sentences:
+                padding = torch.zeros(
+                    (max_sentences - num_sentences, item["sentence_masks"].shape[1])
+                )
+                padded_mask = torch.cat([item["sentence_masks"], padding], dim=0)
+            else:
+                padded_mask = item["sentence_masks"]
+            padded_sentence_masks.append(padded_mask)
+
+            for label_type in ["challenge", "approach", "outcome"]:
+                labels = item["labels"][label_type]
+                if len(labels) < max_sentences:
+                    padding = torch.full(
+                        (max_sentences - len(labels),), -100, dtype=labels.dtype
+                    )
+                    padded_label = torch.cat([labels, padding])
+                else:
+                    padded_label = labels
+                padded_labels[label_type].append(padded_label)
+
+        sentence_masks = torch.stack(padded_sentence_masks)
+        labels = {key: torch.stack(values) for key, values in padded_labels.items()}
 
         return {
             "input_ids": input_ids,

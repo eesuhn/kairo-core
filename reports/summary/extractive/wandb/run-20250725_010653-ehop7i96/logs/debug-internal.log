@@ -1,0 +1,14 @@
+{"time":"2025-07-25T01:06:53.892923673+08:00","level":"INFO","msg":"stream: starting","core version":"0.21.0"}
+{"time":"2025-07-25T01:06:54.500385807+08:00","level":"INFO","msg":"stream: created new stream","id":"ehop7i96"}
+{"time":"2025-07-25T01:06:54.500486558+08:00","level":"INFO","msg":"stream: started","id":"ehop7i96"}
+{"time":"2025-07-25T01:06:54.500623803+08:00","level":"INFO","msg":"writer: Do: started","stream_id":"ehop7i96"}
+{"time":"2025-07-25T01:06:54.500720192+08:00","level":"INFO","msg":"sender: started","stream_id":"ehop7i96"}
+{"time":"2025-07-25T01:06:54.500933595+08:00","level":"INFO","msg":"handler: started","stream_id":"ehop7i96"}
+{"time":"2025-07-25T01:11:01.145905392+08:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading artifact kairo_ext_sum","runtime_seconds":1.004551778}],"total_operations":1}}
+{"time":"2025-07-25T01:12:03.249354729+08:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading artifact kairo_ext_sum","runtime_seconds":61.088291097,"subtasks":[{"desc":"model.pt","runtime_seconds":59.701922117,"progress":"371.8MB/419.4MB"}]}],"total_operations":1}}
+{"time":"2025-07-25T01:12:12.394192841+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-07-25T01:12:12.729112369+08:00","level":"INFO","msg":"stream: closing","id":"ehop7i96"}
+{"time":"2025-07-25T01:12:12.729122711+08:00","level":"INFO","msg":"handler: closed","stream_id":"ehop7i96"}
+{"time":"2025-07-25T01:12:12.729128796+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":"ehop7i96"}
+{"time":"2025-07-25T01:12:12.72918246+08:00","level":"INFO","msg":"sender: closed","stream_id":"ehop7i96"}
+{"time":"2025-07-25T01:12:12.729216204+08:00","level":"INFO","msg":"stream: closed","id":"ehop7i96"}

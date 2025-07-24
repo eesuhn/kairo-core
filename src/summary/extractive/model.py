@@ -21,9 +21,9 @@ class ExtSumModel(nn.Module):
         self.dropout = nn.Dropout(self.config.classifier_dropout)
 
         # Separate classifiers for each label type
-        self.challenge_classifier = nn.Linear(self.bert.hidden_size, 1)
-        self.approach_classifier = nn.Linear(self.bert.hidden_size, 1)
-        self.outcome_classifier = nn.Linear(self.bert.hidden_size, 1)
+        self.challenge_classifier = nn.Linear(self.bert.config.hidden_size, 1)
+        self.approach_classifier = nn.Linear(self.bert.config.hidden_size, 1)
+        self.outcome_classifier = nn.Linear(self.bert.config.hidden_size, 1)
 
         self._init_weights()
         self.to(self.config.device)
@@ -109,23 +109,56 @@ class ExtSumModel(nn.Module):
         outcome_logits: torch.Tensor,
         labels: dict,
     ) -> torch.Tensor:
-        loss_fct = nn.BCEWithLogitsLoss(
-            pos_weight=torch.tensor(self.config.class_weights).to(self.config.device)
-            if self.config.class_weights
-            else None
-        )
+        challenge_logits_flat = challenge_logits.view(-1)
+        approach_logits_flat = approach_logits.view(-1)
+        outcome_logits_flat = outcome_logits.view(-1)
 
-        challenge_loss = loss_fct(
-            challenge_logits.view(-1), labels["challenge"].view(-1).float()
-        )
-        approach_loss = loss_fct(
-            approach_logits.view(-1), labels["approach"].view(-1).float()
-        )
-        outcome_loss = loss_fct(
-            outcome_logits.view(-1), labels["outcome"].view(-1).float()
-        )
+        challenge_labels_flat = labels["challenge"].view(-1)
+        approach_labels_flat = labels["approach"].view(-1)
+        outcome_labels_flat = labels["outcome"].view(-1)
 
-        total_loss = (challenge_loss + approach_loss + outcome_loss) / 3.0
+        valid_mask = challenge_labels_flat != -100
+
+        if valid_mask.sum() > 0:
+            if self.config.class_weights:
+                challenge_loss_fct = nn.BCEWithLogitsLoss(
+                    pos_weight=torch.tensor([self.config.class_weights[0]]).to(
+                        self.config.device
+                    )
+                )
+                approach_loss_fct = nn.BCEWithLogitsLoss(
+                    pos_weight=torch.tensor([self.config.class_weights[1]]).to(
+                        self.config.device
+                    )
+                )
+                outcome_loss_fct = nn.BCEWithLogitsLoss(
+                    pos_weight=torch.tensor([self.config.class_weights[2]]).to(
+                        self.config.device
+                    )
+                )
+            else:
+                challenge_loss_fct = nn.BCEWithLogitsLoss()
+                approach_loss_fct = nn.BCEWithLogitsLoss()
+                outcome_loss_fct = nn.BCEWithLogitsLoss()
+
+            challenge_loss = challenge_loss_fct(
+                challenge_logits_flat[valid_mask],
+                challenge_labels_flat[valid_mask].float(),
+            )
+            approach_loss = approach_loss_fct(
+                approach_logits_flat[valid_mask],
+                approach_labels_flat[valid_mask].float(),
+            )
+            outcome_loss = outcome_loss_fct(
+                outcome_logits_flat[valid_mask], outcome_labels_flat[valid_mask].float()
+            )
+
+            total_loss = (challenge_loss + approach_loss + outcome_loss) / 3.0
+        else:
+            total_loss = torch.tensor(
+                0.0, device=self.config.device, requires_grad=True
+            )
+
         return total_loss
 
     def _init_weights(self) -> None:
