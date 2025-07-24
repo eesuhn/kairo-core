@@ -293,18 +293,7 @@ class NerTrainer:
         else:
             filepath = Path(self.checkpoint_dir / f"checkpoint_{self.global_step}.pt")
 
-        checkpoint = {
-            "model_state_dict": self.model.state_dict(),
-            "optimizer_state_dict": self.optimizer.state_dict(),
-            "scheduler_state_dict": self.scheduler.state_dict(),
-            "global_step": self.global_step,
-            "best_f1": self.best_f1,
-            "label_map": self.label_map,
-        }
-        if is_best:  # NOTE: Save only model state for best checkpoint
-            torch.save(self.model.state_dict(), filepath)
-        else:
-            torch.save(checkpoint, filepath)
+        torch.save(self.mode.state_dict(), filepath)
         justsdk.print_success(f"Checkpoint saved to {filepath}")
 
         if self.config.use_wandb and is_best:
@@ -443,7 +432,7 @@ class NerDataset(Dataset):
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> dict:
         item = self.data[index]
         tokens = item["tokens"]
         labels = item["ner_tags"]
@@ -453,8 +442,7 @@ class NerDataset(Dataset):
             is_split_into_words=True,
             truncation=True,
             padding="max_length",
-            max_length=NerConfig.max_length
-            // 2,  # NOTE: Default 512 would crash the machine LOL
+            max_length=self.tokenizer.model_max_length,
             return_tensors="pt",
         )
 
