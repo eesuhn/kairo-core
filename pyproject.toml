@@ -21,6 +21,7 @@ dependencies = [
     "pymupdf==1.26.1",
     "python-dotenv==1.1.0",
     "python-multipart==0.0.20",
+    "rouge-score==0.1.2",
     "scikit-learn==1.5.2",
     "sentence-transformers==4.1.0",
     "seqeval==1.2.2",

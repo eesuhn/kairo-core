@@ -21,8 +21,8 @@ class AbsSumConfig:
     max_grad_norm: float = 1.0  # Default for gradient clipping
 
     # Evaluation
-    logging_steps: int = 100
-    eval_steps: int = 200
+    logging_steps: int = 2
+    eval_steps: int = 20
     save_steps: int = 1000
 
     # Early stopping

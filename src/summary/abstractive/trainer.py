@@ -12,6 +12,7 @@ from torch.optim import AdamW
 from tqdm import tqdm
 from torch import nn
 from pathlib import Path
+from rouge_score import rouge_scorer
 
 
 class AbsSumDataset(Dataset):
@@ -162,8 +163,10 @@ class AbsSumTrainer:
 
                 # Evaluate
                 if self.val_ds and self.global_step % self.config.eval_steps == 0:
+                    eval_res = self.evaluate()
+
                     # Check for early stopping
-                    if self._check_early_stop(self.evaluate()):
+                    if self._check_early_stop(eval_res["rougeL_f1"]):
                         return
 
                 if self.global_step % self.config.save_steps == 0:
@@ -178,7 +181,7 @@ class AbsSumTrainer:
             justsdk.print_success("Training interrupted, saving state...")
             sys.exit(0)  # A bit brutal but effective
 
-    def evaluate(self) -> float:
+    def evaluate(self) -> dict:
         eval_dl = DataLoader(
             self.val_ds,
             batch_size=self.config.batch_size,
@@ -189,15 +192,67 @@ class AbsSumTrainer:
         self.model.eval()
         eval_loss = 0.0
 
+        predictions = []
+        references = []
+
         with torch.no_grad():
             for batch in tqdm(eval_dl, desc="Evaluating..."):
                 batch = {k: v.to(self.config.device) for k, v in batch.items()}
+
                 outputs = self.model(**batch)
                 if "loss" in outputs:
                     eval_loss += outputs["loss"].item()
 
+                # Generate predictions for ROUGE
+                generated_ids = self.model.model.generate(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    max_length=self.config.max_length,
+                    num_beams=4,
+                    early_stopping=True,
+                )
+
+                # Decode predictions and references
+                preds = self.model.tokenizer.batch_decode(
+                    generated_ids, skip_special_tokens=True
+                )
+                refs = self.model.tokenizer.batch_decode(
+                    batch["labels"].masked_fill(
+                        batch["labels"] == -100, self.model.tokenizer.pad_token_id
+                    ),
+                    skip_special_tokens=True,
+                )
+
+                predictions.extend(preds)
+                references.extend(refs)
+
+        scorer = rouge_scorer.RougeScorer(
+            ["rouge1", "rouge2", "rougeL"], use_stemmer=True
+        )
+        rouge_scores = {"rouge1": [], "rouge2": [], "rougeL": []}
+
+        for pred, ref in zip(predictions, references):
+            scores = scorer.score(ref, pred)
+            for key in rouge_scores:
+                rouge_scores[key].append(scores[key].fmeasure)
+
+        avg_rouge = {k: sum(v) / len(v) for k, v in rouge_scores.items()}
         avg_loss = eval_loss / len(eval_dl)
-        return avg_loss
+
+        res = {
+            "loss": avg_loss,
+            "rouge1_f1": avg_rouge["rouge1"],
+            "rouge2_f1": avg_rouge["rouge2"],
+            "rougeL_f1": avg_rouge["rougeL"],
+        }
+
+        justsdk.print_info("Evaluation results", newline_before=True)
+        justsdk.print_info(f"  Loss: {res['loss']:.4f}")
+        justsdk.print_info(f"  ROUGE-1 F1: {res['rouge1_f1']:.4f}")
+        justsdk.print_info(f"  ROUGE-2 F1: {res['rouge2_f1']:.4f}")
+        justsdk.print_info(f"  ROUGE-L F1: {res['rougeL_f1']:.4f}")
+
+        return res
 
     def _check_early_stop(self, current_f1: float) -> bool:
         """
