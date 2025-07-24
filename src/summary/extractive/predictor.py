@@ -6,6 +6,7 @@ from .model import ExtSumModel
 from configs._constants import MODEL_DIR
 from transformers import AutoTokenizer
 from typing import Union
+from src.utils import Utils
 
 
 MODEL_EXT_SUM_BEST_PATH = MODEL_DIR / "summary" / "extractive" / "model.pt"
@@ -35,11 +36,16 @@ class ExtSumPredictor:
         return_scores: bool = False,
         min_sentences_per_type: int = None,
         max_sentences_per_type: int = None,
+        preprocess_text: bool = True,
+        ensure_capitalized: bool = True,
+        ensure_complete_sentence: bool = True,
     ) -> dict:
         if isinstance(texts, str):
+            if preprocess_text:
+                texts = Utils.preprocess_text(texts)
             sentences = self._split_into_sentences(texts)
         else:
-            sentences = texts
+            sentences = [Utils.preprocess_text(text) for text in texts]
 
         if not sentences:
             empty_result = {"challenge": [], "approach": [], "outcome": []}
@@ -78,7 +84,19 @@ class ExtSumPredictor:
                     [pair[0] for pair in sorted_pairs[:max_sentences_per_type]]
                 )
 
-            results[label_type] = [sentences[i] for i in selected_indices]
+            selected_sentences = [sentences[i] for i in selected_indices]
+
+            if ensure_capitalized:
+                selected_sentences = [
+                    Utils.ensure_capitalized(s) for s in selected_sentences
+                ]
+
+            if ensure_complete_sentence:
+                selected_sentences = [
+                    Utils.ensure_complete_sentence(s) for s in selected_sentences
+                ]
+
+            results[label_type] = selected_sentences
             if return_scores:
                 result_scores[label_type] = [
                     selected_scores[i] for i in selected_indices
@@ -205,14 +223,14 @@ class ExtSumPredictor:
 
         return sentences
 
-    def extract_combined_summary(
+    def generate_summary(
         self,
         texts: Union[str, list],
         max_sentences: int = 10,
         balanced: bool = True,
-    ) -> str:
+    ) -> list:
         """
-        Extract a combined summary from all categories.
+        Generate a combined summary from all categories.
         """
         results, scores = self.predict(texts, return_scores=True)
 
@@ -231,7 +249,7 @@ class ExtSumPredictor:
         all_sentences.sort(key=lambda x: x["score"], reverse=True)
 
         if balanced:
-            selected = []
+            selected: list = []
             type_counts = {"challenge": 0, "approach": 0, "outcome": 0}
             max_per_type = max_sentences // 3 + 1
 
@@ -250,4 +268,4 @@ class ExtSumPredictor:
         else:
             selected = [item["sentence"] for item in all_sentences[:max_sentences]]
 
-        return " ".join(selected)
+        return selected
