@@ -12,7 +12,7 @@ class SumMain:
 
     def summarize(self, texts: Union[str, list[str]]) -> dict:
         abs_sum: list = self.asp.predict(texts=texts)
-        ext_sum: list = self.esp.predict(texts=texts)
+        ext_sum = self.esp.extract_combined_summary(texts=texts)
 
         res = {
             "abstract": abs_sum,

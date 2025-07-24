@@ -31,15 +31,15 @@ class ExtSumPredictor:
 
     def predict(
         self,
-        text: Union[str, list],
+        texts: Union[str, list],
         return_scores: bool = False,
         min_sentences_per_type: int = None,
         max_sentences_per_type: int = None,
     ) -> dict:
-        if isinstance(text, str):
-            sentences = self._split_into_sentences(text)
+        if isinstance(texts, str):
+            sentences = self._split_into_sentences(texts)
         else:
-            sentences = text
+            sentences = texts
 
         if not sentences:
             empty_result = {"challenge": [], "approach": [], "outcome": []}
@@ -207,14 +207,14 @@ class ExtSumPredictor:
 
     def extract_combined_summary(
         self,
-        text: Union[str, list],
+        texts: Union[str, list],
         max_sentences: int = 10,
         balanced: bool = True,
     ) -> str:
         """
         Extract a combined summary from all categories.
         """
-        results, scores = self.predict(text, return_scores=True)
+        results, scores = self.predict(texts, return_scores=True)
 
         all_sentences = []
 

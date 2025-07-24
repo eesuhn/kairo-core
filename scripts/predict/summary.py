@@ -45,7 +45,7 @@ class SumPredictScript:
 
         ext_sum = summaries.get("extractive", [])
         justsdk.print_success("Extractive:")
-        print(ext_sum)
+        justsdk.print_data(ext_sum)
 
 
 if __name__ == "__main__":
