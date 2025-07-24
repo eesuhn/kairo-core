@@ -56,10 +56,11 @@ class AudioProcessorConfig:
 
 
 class AudioProcessor:
-    def __init__(self) -> None:
+    def __init__(self, quiet: bool = False) -> None:
         self.acp = AudioProcessorConfig()
         self.whisper_model = self._init_whisper_model()
         self.diarization_pipeline = self._init_diarization_pipeline()
+        self.cp = justsdk.ColorPrinter(quiet=quiet)
 
     def process(self, input_file: Path) -> dict:
         """
@@ -68,7 +69,7 @@ class AudioProcessor:
         Args:
             input_file: Path to the audio file to process.
         """
-        justsdk.print_info(f"Processing audio: {str(input_file)}")
+        self.cp.info(f"Processing audio: {str(input_file)}")
         transcription = self._transcribe(input_file)
         diarization = self._diarize(input_file)
         return {
@@ -79,15 +80,13 @@ class AudioProcessor:
     def _init_whisper_model(self) -> WhisperModel:
         try:
             model = WhisperModel(**self.acp.whisper_params)
-            justsdk.print_success(
-                f"Init {self.acp.whisper_model_name}", newline_before=True
-            )
+            self.cp.success(f"Init {self.acp.whisper_model_name}", newline_before=True)
             return model
         except Exception as e:
             raise RuntimeError(f"Failed to init {self.acp.whisper_model_name}: {e}")
 
     def _transcribe(self, audio_file: Path) -> dict:
-        justsdk.print_info(f"Transcribing audio: {str(audio_file)}")
+        self.cp.info(f"Transcribing audio: {str(audio_file)}")
         try:
             generator, info = self.whisper_model.transcribe(
                 audio=str(audio_file), **self.acp.whisper_transcribe_params
@@ -114,13 +113,13 @@ class AudioProcessor:
             if torch.cuda.is_available():
                 pipeline.to(torch.device("cuda"))
 
-            justsdk.print_success(f"Init {self.acp.diarization_model_name}")
+            self.cp.success(f"Init {self.acp.diarization_model_name}")
             return pipeline
         except Exception as e:
             raise RuntimeError(f"Failed to init {self.acp.diarization_model_name}: {e}")
 
     def _diarize(self, audio_file: Path) -> dict:
-        justsdk.print_info(f"Diarizing audio: {str(audio_file)}")
+        self.cp.info(f"Diarizing audio: {str(audio_file)}")
         try:
             with ProgressHook() as hook:
                 diarization = self.diarization_pipeline(file=str(audio_file), hook=hook)

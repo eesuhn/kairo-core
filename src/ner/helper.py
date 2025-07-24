@@ -5,7 +5,7 @@ from configs._constants import CONFIGS_DIR
 
 
 class NerHelper:
-    idh = InterDataHandler()
+    idh = InterDataHandler(quiet=True)
     uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
     all_ds = idh.list_datasets_by_category("ner")
 

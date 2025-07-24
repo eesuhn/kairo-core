@@ -10,8 +10,9 @@ from pathlib import Path
 class InterDataHandler:
     TARGET_DATA_CONFIG = CONFIGS_DIR / "datasets.yml"
 
-    def __init__(self):
+    def __init__(self, quiet: bool = False) -> None:
         self._dataset_cache: dict = {}
+        self.cp = justsdk.ColorPrinter(quiet=quiet)
 
     def download_data(self) -> None:
         """
@@ -20,7 +21,7 @@ class InterDataHandler:
         target_data = justsdk.read_file(self.TARGET_DATA_CONFIG)
 
         for category, datasets in target_data.items():
-            justsdk.print_info(f"category/{category}")
+            self.cp.info(f"category/{category}")
 
             for dataset in datasets:
                 name = dataset["name"]
@@ -67,18 +68,18 @@ class InterDataHandler:
         """
         if use_cache and dataset_name in self._dataset_cache:
             if not quiet:
-                justsdk.print_info(f"Loading cached dataset: {dataset_name}")
+                self.cp.info(f"Loading cached dataset: {dataset_name}")
             return self._dataset_cache[dataset_name]
 
         dataset_path = INTER_DATA_DIR / dataset_name
 
         if not dataset_path.exists():
-            justsdk.print_error(f"Dataset not found: {dataset_path}")
+            self.cp.error(f"Dataset not found: {dataset_path}")
             return None
 
         try:
             if not quiet:
-                justsdk.print_info(f"Loading dataset from disk: {dataset_name}")
+                self.cp.info(f"Loading dataset from disk: {dataset_name}")
             # dataset = DatasetDict.load_from_disk(
             #     str(dataset_path)
             # )  # NOTE: Only returns `DatasetDict`
@@ -95,7 +96,7 @@ class InterDataHandler:
             return dataset
 
         except Exception as e:
-            justsdk.print_error(f"Error loading dataset {dataset_name}: {e}")
+            self.cp.error(f"Error loading dataset {dataset_name}: {e}")
             return None
 
     def list_datasets_by_category(self, category: str) -> list:
@@ -112,7 +113,7 @@ class InterDataHandler:
 
     def clear_cache(self) -> None:
         self._dataset_cache.clear()
-        justsdk.print_info("Cleared DataHandler cache")
+        self.cp.info("Cleared DataHandler cache")
 
     def list_cached_datasets(self) -> list:
         return list(self._dataset_cache.keys())

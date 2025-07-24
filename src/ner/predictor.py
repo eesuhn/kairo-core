@@ -37,12 +37,14 @@ class NerPredictor:
         if not MODEL_NER_BEST_PATH.exists():
             raise FileNotFoundError(f"Model not found at {MODEL_NER_BEST_PATH}")
 
-        justsdk.print_info(f"Loading NER model from {MODEL_NER_BEST_PATH}")
         self.config = config
+        self.cp = justsdk.ColorPrinter(quiet=self.config.quite)
+
+        self.cp.info(f"Loading NER model from {MODEL_NER_BEST_PATH}")
         self.uni_labels, _ = NerHelper.get_uni_label_map()
         self.id_to_label = {i: label for i, label in enumerate(self.uni_labels)}
 
-        self.model = NerModel(num_labels=len(self.uni_labels))
+        self.model = NerModel(config=self.config, num_labels=len(self.uni_labels))
         # Load the best model weights
         state_dict = torch.load(
             MODEL_NER_BEST_PATH, map_location=self.config.device, weights_only=True
@@ -50,7 +52,7 @@ class NerPredictor:
         self.model.load_state_dict(state_dict)
         self.model.to(self.config.device)
         self.model.eval()  # NOTE: Eval mode to prevent dropout during inference
-        justsdk.print_success("Loaded NER model")
+        self.cp.success("Loaded NER model")
 
         self.tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(
             self.config.base_model_name

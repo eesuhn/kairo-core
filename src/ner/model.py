@@ -9,15 +9,18 @@ from typing import Optional
 
 
 class NerModel(nn.Module):
-    def __init__(self, num_labels: int, *args, **kwargs) -> None:
+    def __init__(self, config: NerConfig, num_labels: int, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
+        self.config = config
+        self.cp = justsdk.ColorPrinter(quiet=self.config.quite)
+
         self.num_labels = num_labels
-        justsdk.print_debug(f"num_labels: {num_labels}")
+        self.cp.debug(f"num_labels: {num_labels}")
         model_name = NerConfig.base_model_name
 
         # Init BERT model
-        justsdk.print_info(f"Loading pre-trained: {model_name}")
+        self.cp.info(f"Loading pre-trained: {model_name}")
         self.bert_config = BertConfig.from_pretrained(model_name)
         self.bert_config.output_hidden_states = True
         self.bert_model = BertModel.from_pretrained(model_name, config=self.bert_config)
@@ -38,11 +41,11 @@ class NerModel(nn.Module):
 
     def _freeze_bert(self, encoder: bool = False) -> None:
         if encoder:
-            justsdk.print_info("Freezing BERT encoder")
+            self.cp.info("Freezing BERT encoder")
             for param in self.bert_model.encoder.parameters():
                 param.requires_grad_(False)
         else:
-            justsdk.print_info("Freezing whole BERT")
+            self.cp.info("Freezing whole BERT")
             # XXX: Is this for real freezing the whole BERT???
             for param in self.bert_model.parameters():
                 param.requires_grad_(False)

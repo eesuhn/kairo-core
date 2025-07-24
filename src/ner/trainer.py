@@ -31,7 +31,7 @@ REPORTS_NER_DIR = REPORTS_DIR / "ner"
 class NerTrainer:
     def __init__(self, config: NerConfig) -> None:
         self.config = config
-        self.idh = InterDataHandler()
+        self.idh = InterDataHandler(quiet=self.config.quite)
 
         if self.config.device != "cuda":
             # NOTE: Disable parallelism for tokenizers to avoid issues with CPU
@@ -64,7 +64,7 @@ class NerTrainer:
         self.label_to_id = {label: i for i, label in enumerate(self.uni_labels)}
         self.id_to_label = {i: label for i, label in enumerate(self.uni_labels)}
 
-        self.model = NerModel(num_labels=len(self.uni_labels))
+        self.model = NerModel(config=self.config, num_labels=len(self.uni_labels))
         self.model.to(self.config.device)
 
         self.tokenizer = BertTokenizerFast.from_pretrained(self.config.base_model_name)
