@@ -1,0 +1,17 @@
+[[35minfo[39m] Enabling model upload to wandb...
+[[35minfo[39m] Loading dataset from disk: eriktks/conll2003
+[[35minfo[39m] Loading dataset from disk: eesuhn/crossner-ai
+[[35minfo[39m] Loading dataset from disk: eesuhn/crossner-literature
+[[35minfo[39m] Loading dataset from disk: eesuhn/crossner-science
+[[36mdebug[39m] num_labels: 51
+[[35minfo[39m] Loading pre-trained: google-bert/bert-base-uncased
+
+[[35minfo[39m] Starting training...
+[[35minfo[39m]   No. of examples: 14441
+[[35minfo[39m]   No. of epochs: 10
+[[35minfo[39m]   Batch size: 32
+[[35minfo[39m]   Total training steps: 4520
+Epoch 1/10:   1%|▌                                                                   | 4/452 [00:31<59:26,  7.96s/it]
+[[33mwarning[39m] Training interrupted...
+[[32msuccess[39m] Checkpoint saved to /home/yilim/kairo-core/models/ner/checkpoints/interrupted_checkpoint_4.pt
+[[32msuccess[39m] Training interrupted, saving state...

@@ -1,0 +1,14 @@
+{"time":"2025-07-24T15:22:04.321391908+08:00","level":"INFO","msg":"stream: starting","core version":"0.21.0"}
+{"time":"2025-07-24T15:22:05.350850184+08:00","level":"INFO","msg":"stream: created new stream","id":"478b543x"}
+{"time":"2025-07-24T15:22:05.350912784+08:00","level":"INFO","msg":"stream: started","id":"478b543x"}
+{"time":"2025-07-24T15:22:05.351016898+08:00","level":"INFO","msg":"writer: Do: started","stream_id":"478b543x"}
+{"time":"2025-07-24T15:22:05.351078599+08:00","level":"INFO","msg":"sender: started","stream_id":"478b543x"}
+{"time":"2025-07-24T15:22:05.351124319+08:00","level":"INFO","msg":"handler: started","stream_id":"478b543x"}
+{"time":"2025-07-24T15:48:39.272418092+08:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading artifact kairo_ner","runtime_seconds":1.008568524}],"total_operations":1}}
+{"time":"2025-07-24T15:49:39.369297566+08:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading artifact kairo_ner","runtime_seconds":61.105445424,"subtasks":[{"desc":"model.pt","runtime_seconds":59.922453042,"progress":"368.1MB/417.9MB"}]}],"total_operations":1}}
+{"time":"2025-07-24T15:49:49.158460192+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-07-24T15:49:49.528863034+08:00","level":"INFO","msg":"stream: closing","id":"478b543x"}
+{"time":"2025-07-24T15:49:49.528898085+08:00","level":"INFO","msg":"handler: closed","stream_id":"478b543x"}
+{"time":"2025-07-24T15:49:49.528911546+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":"478b543x"}
+{"time":"2025-07-24T15:49:49.528980628+08:00","level":"INFO","msg":"sender: closed","stream_id":"478b543x"}
+{"time":"2025-07-24T15:49:49.528997772+08:00","level":"INFO","msg":"stream: closed","id":"478b543x"}

@@ -1,0 +1,13 @@
+{"time":"2025-07-24T16:20:24.065449494+08:00","level":"INFO","msg":"stream: starting","core version":"0.21.0"}
+{"time":"2025-07-24T16:20:25.100590641+08:00","level":"INFO","msg":"stream: created new stream","id":"zc89iptr"}
+{"time":"2025-07-24T16:20:25.100636807+08:00","level":"INFO","msg":"stream: started","id":"zc89iptr"}
+{"time":"2025-07-24T16:20:25.100728329+08:00","level":"INFO","msg":"writer: Do: started","stream_id":"zc89iptr"}
+{"time":"2025-07-24T16:20:25.100742943+08:00","level":"INFO","msg":"handler: started","stream_id":"zc89iptr"}
+{"time":"2025-07-24T16:20:25.100879137+08:00","level":"INFO","msg":"sender: started","stream_id":"zc89iptr"}
+{"time":"2025-07-24T16:21:03.359540403+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-07-24T16:21:03.429440182+08:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading summary, console lines 13-16","runtime_seconds":0.069779441}],"total_operations":1}}
+{"time":"2025-07-24T16:21:03.876615827+08:00","level":"INFO","msg":"stream: closing","id":"zc89iptr"}
+{"time":"2025-07-24T16:21:03.876631807+08:00","level":"INFO","msg":"handler: closed","stream_id":"zc89iptr"}
+{"time":"2025-07-24T16:21:03.876641774+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":"zc89iptr"}
+{"time":"2025-07-24T16:21:03.876676512+08:00","level":"INFO","msg":"sender: closed","stream_id":"zc89iptr"}
+{"time":"2025-07-24T16:21:03.8766987+08:00","level":"INFO","msg":"stream: closed","id":"zc89iptr"}
