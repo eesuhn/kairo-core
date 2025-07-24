@@ -36,7 +36,6 @@ class NerConfig:
 
     # Output
     model_dir: Path = MODEL_DIR / "ner"
-    checkpoint_dir: Path = model_dir / "checkpoints"
 
     # Others
     seed: int = 42

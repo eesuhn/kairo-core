@@ -7,6 +7,7 @@ import os
 import wandb
 
 from ..inter_data_handler import InterDataHandler
+from .helper import NerHelper
 from configs._constants import CONFIGS_DIR, REPORTS_DIR
 from .model import NerModel
 from .config import NerConfig
@@ -21,6 +22,7 @@ from seqeval.metrics import (
     recall_score,
     classification_report,
 )
+from pathlib import Path
 
 
 REPORTS_NER_DIR = REPORTS_DIR / "ner"
@@ -38,8 +40,9 @@ class NerTrainer:
         if not self.config.model_dir.exists():
             self.config.model_dir.mkdir(parents=True, exist_ok=True)
 
-        if not self.config.checkpoint_dir.exists():
-            self.config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.checkpoint_dir = self.config.model_dir / "checkpoints"
+        if not self.checkpoint_dir.exists():
+            self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         # Init wandb
         if self.config.use_wandb:
@@ -58,7 +61,7 @@ class NerTrainer:
         self.uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
 
         # Prepare labels and remap datasets
-        self.uni_labels, self.label_map = self._get_uni_label_map()
+        self.uni_labels, self.label_map = NerHelper.get_uni_label_map()
         self.label_to_id = {label: i for i, label in enumerate(self.uni_labels)}
         self.id_to_label = {i: label for i, label in enumerate(self.uni_labels)}
 
@@ -278,13 +281,14 @@ class NerTrainer:
 
     def _save_checkpoint(self, is_best: bool = False) -> None:
         if self.interrupted:
-            filename = f"interrupted_checkpoint_{self.global_step}.pt"
+            filepath = Path(
+                self.checkpoint_dir / f"interrupted_checkpoint_{self.global_step}.pt"
+            )
         elif is_best:
-            filename = "best_model.pt"
+            filepath = Path(self.config.model_dir / "model.pt")
         else:
-            filename = f"checkpoint_{self.global_step}.pt"
+            filepath = Path(self.checkpoint_dir / f"checkpoint_{self.global_step}.pt")
 
-        checkpoint_path = self.config.checkpoint_dir / filename
         checkpoint = {
             "model_state_dict": self.model.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
@@ -293,8 +297,8 @@ class NerTrainer:
             "best_f1": self.best_f1,
             "label_map": self.label_map,
         }
-        torch.save(checkpoint, checkpoint_path)
-        justsdk.print_success(f"Checkpoint saved to {checkpoint_path}")
+        torch.save(checkpoint, filepath)
+        justsdk.print_success(f"Checkpoint saved to {filepath}")
 
         if self.config.use_wandb and is_best:
             wandb.log({"checkpoint/best_f1": self.best_f1}, step=self.global_step)
@@ -337,36 +341,6 @@ class NerTrainer:
             num_warmup_steps=self.config.warmup_steps,
             num_training_steps=num_training_steps,
         )
-
-    def _get_uni_label_map(self) -> tuple:
-        def _get_uni_label(ori_label: str) -> str:
-            if ori_label == "O":
-                return "O"
-            if ori_label.startswith(("B-", "I-")):
-                prefix, ent_type = ori_label[:2], ori_label[2:]
-                for uni_type, patterns in self.uni_rules.items():
-                    for pattern in patterns:
-                        if ent_type.lower().startswith(pattern.lower()):
-                            return f"{prefix}{uni_type}"
-            return ori_label
-
-        uni_labels: list = ["O"]
-        label_map: dict = {}
-
-        for ds_name in self.all_ds:
-            ds_labels = (
-                self.idh.load_dataset(ds_name)["train"]
-                .features["ner_tags"]
-                .feature.names
-            )
-            label_map[ds_name] = {}
-
-            for ori_id, label in enumerate(ds_labels):
-                uni_label = _get_uni_label(label)
-                if uni_label not in uni_labels:
-                    uni_labels.append(uni_label)
-                label_map[ds_name][ori_id] = uni_labels.index(uni_label)
-        return uni_labels, label_map
 
     def _remap_ds(self):
         combined_train: list = []
@@ -426,10 +400,10 @@ class NerTrainer:
             if (
                 self.config.use_wandb
                 and self.config.upload_model_wandb
-                and (self.config.checkpoint_dir / "best_model.pt").exists()
+                and (self.config.model_dir / "model.pt").exists()
             ):
                 model_artifact.add_file(
-                    str(self.config.checkpoint_dir / "best_model.pt")
+                    str(self.config.model_dir / "model.pt"),
                 )
 
             label_map_artifact = {
