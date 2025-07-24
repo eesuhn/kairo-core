@@ -8,7 +8,7 @@ import wandb
 
 from ..inter_data_handler import InterDataHandler
 from .helper import NerHelper
-from configs._constants import CONFIGS_DIR, REPORTS_DIR
+from configs._constants import REPORTS_DIR
 from .model import NerModel
 from .config import NerConfig
 from transformers import BertTokenizerFast, get_linear_schedule_with_warmup
@@ -58,7 +58,6 @@ class NerTrainer:
             justsdk.print_info("Enabling model upload to wandb...")
 
         self.all_ds = self.idh.list_datasets_by_category("ner")
-        self.uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
 
         # Prepare labels and remap datasets
         self.uni_labels, self.label_map = NerHelper.get_uni_label_map()
@@ -297,7 +296,10 @@ class NerTrainer:
             "best_f1": self.best_f1,
             "label_map": self.label_map,
         }
-        torch.save(checkpoint, filepath)
+        if is_best:  # NOTE: Save only model state for best checkpoint
+            torch.save(self.model.state_dict(), filepath)
+        else:
+            torch.save(checkpoint, filepath)
         justsdk.print_success(f"Checkpoint saved to {filepath}")
 
         if self.config.use_wandb and is_best:

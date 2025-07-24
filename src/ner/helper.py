@@ -1,17 +1,22 @@
+import justsdk
+
 from ..inter_data_handler import InterDataHandler
+from configs._constants import CONFIGS_DIR
 
 
 class NerHelper:
-    @staticmethod
-    def get_uni_label_map(self) -> tuple:
-        idh = InterDataHandler()
+    idh = InterDataHandler()
+    uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
+    all_ds = idh.list_datasets_by_category("ner")
 
+    @staticmethod
+    def get_uni_label_map() -> tuple:
         def _get_uni_label(ori_label: str) -> str:
             if ori_label == "O":
                 return "O"
             if ori_label.startswith(("B-", "I-")):
                 prefix, ent_type = ori_label[:2], ori_label[2:]
-                for uni_type, patterns in self.uni_rules.items():
+                for uni_type, patterns in NerHelper.uni_rules.items():
                     for pattern in patterns:
                         if ent_type.lower().startswith(pattern.lower()):
                             return f"{prefix}{uni_type}"
@@ -20,9 +25,11 @@ class NerHelper:
         uni_labels: list = ["O"]
         label_map: dict = {}
 
-        for ds_name in self.all_ds:
+        for ds_name in NerHelper.all_ds:
             ds_labels = (
-                idh.load_dataset(ds_name)["train"].features["ner_tags"].feature.names
+                NerHelper.idh.load_dataset(ds_name)["train"]
+                .features["ner_tags"]
+                .feature.names
             )
             label_map[ds_name] = {}
 

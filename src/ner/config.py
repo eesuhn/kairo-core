@@ -37,6 +37,9 @@ class NerConfig:
     # Output
     model_dir: Path = MODEL_DIR / "ner"
 
+    # Predict
+    confidence_threshold: float = 0.0
+
     # Others
     seed: int = 42
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
