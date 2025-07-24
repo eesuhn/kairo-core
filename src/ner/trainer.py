@@ -238,7 +238,7 @@ class NerTrainer:
             "overall_precision": precision_score(true_labels, pred_labels),
             "overall_recall": recall_score(true_labels, pred_labels),
             "classification_report": classification_report(
-                true_labels, pred_labels, output_dict=True
+                true_labels, pred_labels, output_dict=True, zero_division=0
             ),
         }
 
