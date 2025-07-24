@@ -43,12 +43,16 @@ class NerTrainer:
 
         # Init wandb
         if self.config.use_wandb:
+            justsdk.print_info("Initializing wandb...")
             wandb.init(
                 project="kairo-core",
                 config=vars(self.config),
                 dir=REPORTS_NER_DIR,
                 name=f"ner_{self.config.base_model_name.replace('/', '_')}",
             )
+
+        if self.config.upload_model_wandb:
+            justsdk.print_info("Enabling model upload to wandb...")
 
         self.all_ds = self.idh.list_datasets_by_category("ner")
         self.uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
