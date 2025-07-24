@@ -2,6 +2,8 @@ import torch
 import justsdk
 import os
 import sys
+import wandb
+import signal
 
 from .config import AbsSumConfig
 from src.inter_data_handler import InterDataHandler
@@ -13,6 +15,10 @@ from tqdm import tqdm
 from torch import nn
 from pathlib import Path
 from rouge_score import rouge_scorer
+from configs._constants import REPORTS_DIR
+
+
+REPORTS_SUMMARY_DIR = REPORTS_DIR / "summary" / "abstractive"
 
 
 class AbsSumDataset(Dataset):
@@ -78,15 +84,6 @@ class AbsSumTrainer:
         self.config = config
         self.idh = InterDataHandler(quiet=self.config.quite)
 
-        self.model = AbsSumModel(self.config)
-        self.optimizer = self._create_optimizer()
-
-        self.pin_memory: bool = True if self.config.device == "cuda" else False
-        self.global_step: int = 0
-        self.interrupted: bool = False
-        self.best_f1: float = 0.0
-        self.patience_count: int = 0
-
         if self.config.device != "cuda":
             # NOTE: Disable parallelism for tokenizers to avoid issues with CPU
             os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -97,6 +94,33 @@ class AbsSumTrainer:
         self.checkpoint_dir: Path = self.config.model_dir / "checkpoints"
         if not self.checkpoint_dir.exists():
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+        if not REPORTS_SUMMARY_DIR.exists():
+            REPORTS_SUMMARY_DIR.mkdir(parents=True, exist_ok=True)
+
+        if self.config.use_wandb:
+            justsdk.print_info("Initializing wandb...")
+            wandb.init(
+                project="kairo-core",
+                config=vars(self.config),
+                dir=REPORTS_SUMMARY_DIR,
+                name=f"abs_sum_{self.config.base_model_name.replace('/', '_')}",
+            )
+
+        if self.config.upload_model_wandb:
+            justsdk.print_info("Enabling model upload to wandb...")
+
+        self.model = AbsSumModel(self.config)
+        self.optimizer = self._create_optimizer()
+
+        self.pin_memory: bool = True if self.config.device == "cuda" else False
+        self.global_step: int = 0
+        self.interrupted: bool = False
+        self.best_rougeL: float = 0.0
+        self.patience_count: int = 0
+
+        # Listen for interrupts
+        signal.signal(signal.SIGINT, self._signal_handler)
 
     def train(self) -> None:
         self._remap_ds()
@@ -115,6 +139,16 @@ class AbsSumTrainer:
         justsdk.print_info(f"  No. of epochs: {self.config.epochs}")
         justsdk.print_info(f"  Batch size: {self.config.batch_size}")
         justsdk.print_info(f"  Total training steps: {num_training_steps}")
+
+        if self.config.use_wandb:
+            wandb.log(
+                {
+                    "train/total_examples": len(self.train_ds),
+                    "train/total_epochs": self.config.epochs,
+                    "train/batch_size": self.config.batch_size,
+                    "train/total_steps": num_training_steps,
+                }
+            )
 
         scaler = torch.amp.GradScaler(device=self.config.device)
 
@@ -161,6 +195,17 @@ class AbsSumTrainer:
                     avg_loss = epoch_loss / (step + 1)
                     progress_bar.set_postfix(loss=avg_loss)
 
+                    if self.config.use_wandb:
+                        wandb.log(
+                            {
+                                "train/loss": avg_loss,
+                                "train/learning_rate": self.scheduler.get_last_lr()[0],
+                                "train/global_step": self.global_step,
+                                "train/epoch": epoch + 1,
+                            },
+                            step=self.global_step,
+                        )
+
                 # Evaluate
                 if self.val_ds and self.global_step % self.config.eval_steps == 0:
                     eval_res = self.evaluate()
@@ -179,12 +224,18 @@ class AbsSumTrainer:
         if self.interrupted:
             self._save_checkpoint()
             justsdk.print_success("Training interrupted, saving state...")
+            if self.config.use_wandb:
+                wandb.finish()
             sys.exit(0)  # A bit brutal but effective
+
+        if self.config.use_wandb:
+            self._save_wandb_artifacts()
+            wandb.finish()
 
     def evaluate(self) -> dict:
         eval_dl = DataLoader(
             self.val_ds,
-            batch_size=self.config.batch_size,
+            batch_size=self.config.eval_batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
             pin_memory=self.pin_memory,
@@ -207,8 +258,8 @@ class AbsSumTrainer:
                 generated_ids = self.model.model.generate(
                     input_ids=batch["input_ids"],
                     attention_mask=batch["attention_mask"],
-                    max_length=self.config.max_length,
-                    num_beams=4,
+                    max_length=self.config.generation_max_length,
+                    num_beams=self.config.generation_num_beams,
                     early_stopping=True,
                 )
 
@@ -252,22 +303,53 @@ class AbsSumTrainer:
         justsdk.print_info(f"  ROUGE-2 F1: {res['rouge2_f1']:.4f}")
         justsdk.print_info(f"  ROUGE-L F1: {res['rougeL_f1']:.4f}")
 
+        if self.config.use_wandb:
+            wandb.log(
+                {
+                    "eval/loss": res["loss"],
+                    "eval/rouge1_f1": res["rouge1_f1"],
+                    "eval/rouge2_f1": res["rouge2_f1"],
+                    "eval/rougeL_f1": res["rougeL_f1"],
+                    "eval/global_step": self.global_step,
+                },
+                step=self.global_step,
+            )
+
         return res
 
-    def _check_early_stop(self, current_f1: float) -> bool:
+    def _signal_handler(self, signum, frame) -> None:
+        justsdk.print_warning("Training interrupted...")
+        self.interrupted = True
+
+    def _check_early_stop(self, current_rougeL: float) -> bool:
         """
         Check if early stopping criteria are met.
         """
-        if current_f1 > self.best_f1 + self.config.early_stopping_delta:
-            self.best_f1 = current_f1
+        if current_rougeL > self.best_rougeL + self.config.early_stopping_delta:
+            self.best_rougeL = current_rougeL
             self.patience_count = 0
             self._save_checkpoint(is_best=True)
+
+            if self.config.use_wandb:
+                wandb.log(
+                    {
+                        "train/best_rougeL": self.best_rougeL,
+                        "train/patience_count": self.patience_count,
+                    },
+                    step=self.global_step,
+                )
             return False
         else:
             self.patience_count += 1
+            if self.config.use_wandb:
+                wandb.log(
+                    {"train/patience_count": self.patience_count}, step=self.global_step
+                )
 
             if self.patience_count >= self.config.early_stopping_patience:
                 justsdk.print_info("Early stopping triggered")
+                if self.config.use_wandb:
+                    wandb.log({"train/early_stopped": True}, step=self.global_step)
                 return True
             return False
 
@@ -283,6 +365,34 @@ class AbsSumTrainer:
 
         torch.save(self.model.state_dict(), filepath)
         justsdk.print_success(f"Checkpoint saved to {filepath}")
+
+        if self.config.use_wandb and is_best:
+            wandb.log(
+                {"checkpoint/best_rougeL": self.best_rougeL}, step=self.global_step
+            )
+
+    def _save_wandb_artifacts(self) -> None:
+        if not self.config.use_wandb:
+            return
+
+        try:
+            model_artifact = wandb.Artifact(name="kairo_abs_sum", type="model")
+
+            # NOTE: Not necessary to upload the model
+            if (
+                self.config.use_wandb
+                and self.config.upload_model_wandb
+                and (self.config.model_dir / "model.pt").exists()
+            ):
+                model_artifact.add_file(
+                    str(self.config.model_dir / "model.pt"),
+                )
+
+            wandb.log_artifact(model_artifact)
+            justsdk.print_success(f"wandb artifacts saved to {REPORTS_SUMMARY_DIR}")
+
+        except Exception as e:
+            justsdk.print_warning(f"Failed to save wandb artifacts: {e}")
 
     def _create_optimizer(self) -> AdamW:
         no_decay = ["bias", "LayerNorm.weight"]

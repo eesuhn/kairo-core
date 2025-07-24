@@ -11,19 +11,22 @@ class AbsSumConfig:
     freeze_t5_encoder: bool = True
 
     # Training
-    batch_size: int = 64
+    batch_size: int = 16
     epochs: int = 10
-    learning_rate: float = 5e-5
+    learning_rate: float = 3e-5
     dropout_rate: float = 0.1
-    num_workers: int = 8
+    num_workers: int = 2
     weight_decay: float = 0.01
-    warmup_steps: int = 500  # NOTE: Should set to 10% of total training steps
-    max_grad_norm: float = 1.0  # Default for gradient clipping
+    warmup_steps: int = 100  # NOTE: Should set to 10% of total training steps
+    max_grad_norm: float = 0.5  # Default for gradient clipping
 
     # Evaluation
     logging_steps: int = 2
     eval_steps: int = 20
     save_steps: int = 1000
+    eval_batch_size: int = 8
+    generation_max_length: int = 128
+    generation_num_beams: int = 2
 
     # Early stopping
     early_stopping_delta: float = 0.001  # Early stopping threshold
@@ -39,3 +42,5 @@ class AbsSumConfig:
     seed: int = 42
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     quite: bool = False
+    use_wandb: bool = False
+    upload_model_wandb: bool = False

@@ -1,0 +1,117 @@
+_wandb:
+    value:
+        cli_version: 0.21.0
+        e:
+            8d4jg8nc7s4e496iv0e1obzyi8q9l5zv:
+                args:
+                    - --use-wandb
+                    - --upload-model-wandb
+                cpu_count: 6
+                cpu_count_logical: 12
+                cudaVersion: "12.5"
+                disk:
+                    /:
+                        total: "1081101176832"
+                        used: "111741485056"
+                email: eason.yihong@gmail.com
+                executable: /home/yilim/kairo-core/.venv/bin/python3
+                git:
+                    commit: abe19f69a966813077f940aa672057dd7abeef79
+                    remote: https://github.com/eesuhn/kairo-core.git
+                gpu: NVIDIA GeForce RTX 4050 Laptop GPU
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ada
+                      memoryTotal: "6439305216"
+                      name: NVIDIA GeForce RTX 4050 Laptop GPU
+                      uuid: GPU-d2835a95-6a4b-4458-0ff0-1fb346927c07
+                host: DESKTOP-QO9VCS5
+                memory:
+                    total: "25204797440"
+                os: Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.39
+                program: -m scripts.train.abs_sum
+                python: CPython 3.11.13
+                root: /home/yilim/kairo-core/reports/summary/abstractive
+                startedAt: "2025-07-24T13:04:00.071033Z"
+                writerId: 8d4jg8nc7s4e496iv0e1obzyi8q9l5zv
+        m: []
+        python_version: 3.11.13
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 49
+                - 51
+                - 53
+                - 71
+                - 105
+            "2":
+                - 1
+                - 5
+                - 11
+                - 49
+                - 51
+                - 53
+                - 71
+                - 105
+            "3":
+                - 2
+                - 13
+                - 16
+                - 61
+            "4": 3.11.13
+            "5": 0.21.0
+            "6": 4.45.2
+            "12": 0.21.0
+            "13": linux-x86_64
+base_model_name:
+    value: google-t5/t5-base
+batch_size:
+    value: 16
+device:
+    value: cuda
+dropout_rate:
+    value: 0.1
+early_stopping_delta:
+    value: 0.001
+early_stopping_patience:
+    value: 3
+epochs:
+    value: 10
+eval_batch_size:
+    value: 8
+eval_steps:
+    value: 20
+freeze_t5_encoder:
+    value: true
+generation_max_length:
+    value: 128
+generation_num_beams:
+    value: 2
+learning_rate:
+    value: 3e-05
+logging_steps:
+    value: 2
+max_grad_norm:
+    value: 0.5
+max_length:
+    value: 128
+model_dir:
+    value: /home/yilim/kairo-core/models/summary/abstractive
+num_workers:
+    value: 2
+quite:
+    value: false
+save_steps:
+    value: 1000
+seed:
+    value: 42
+upload_model_wandb:
+    value: true
+use_wandb:
+    value: true
+warmup_steps:
+    value: 100
+weight_decay:
+    value: 0.01
