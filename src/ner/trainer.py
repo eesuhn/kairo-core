@@ -453,7 +453,8 @@ class NerDataset(Dataset):
             is_split_into_words=True,
             truncation=True,
             padding="max_length",
-            max_length=NerConfig.max_length,
+            max_length=NerConfig.max_length
+            // 2,  # NOTE: Default 512 would crash the machine LOL
             return_tensors="pt",
         )
 
