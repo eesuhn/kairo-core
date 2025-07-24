@@ -83,6 +83,11 @@ class NerScript:
             action="store_true",
             help="Use Weights & Biases for logging.",
         )
+        parser.add_argument(
+            "--upload-model-wandb",
+            action="store_true",
+            help="Upload the trained model to Weights & Biases.",
+        )
         return parser
 
 

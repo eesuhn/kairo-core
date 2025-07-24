@@ -42,3 +42,4 @@ class NerConfig:
     seed: int = 42
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     use_wandb: bool = False
+    upload_model_wandb: bool = False

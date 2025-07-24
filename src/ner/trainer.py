@@ -419,10 +419,13 @@ class NerTrainer:
             model_artifact = wandb.Artifact(name="kairo_ner", type="model")
 
             # NOTE: Not necessary to upload the model
-            # if (self.config.checkpoint_dir / "best_model.pt").exists():
-            #     model_artifact.add_file(
-            #         str(self.config.checkpoint_dir / "best_model.pt")
-            #     )
+            if (
+                self.config.upload_model_wandb
+                and (self.config.checkpoint_dir / "best_model.pt").exists()
+            ):
+                model_artifact.add_file(
+                    str(self.config.checkpoint_dir / "best_model.pt")
+                )
 
             label_map_artifact = {
                 "label_to_id": self.label_to_id,
