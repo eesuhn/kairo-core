@@ -24,7 +24,7 @@ class ExtSumConfig:
     # Evaluation
     logging_steps: int = 10
     eval_steps: int = 50
-    save_steps: int = 500
+    save_steps: int = 50
     eval_batch_size: int = 32
 
     # Early stopping

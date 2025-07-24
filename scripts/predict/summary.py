@@ -43,6 +43,10 @@ class SumPredictScript:
         justsdk.print_success("Abstract:")
         print(abs_sum)
 
+        ext_sum = summaries.get("extractive", [])
+        justsdk.print_success("Extractive:")
+        print(ext_sum)
+
 
 if __name__ == "__main__":
     sps = SumPredictScript()
