@@ -1,5 +1,6 @@
 import justsdk
 import torch
+import torch.nn.functional as F
 
 from .config import ExtSumConfig
 from .model import ExtSumModel
@@ -103,15 +104,6 @@ class ExtSumPredictor:
                 ]
 
         return (results, result_scores) if return_scores else results
-
-    def predict_batch(
-        self, texts: Union[str, list], return_scores: bool = False, **kwargs
-    ) -> list:
-        results = []
-        for text in texts:
-            result = self.predict(text, return_scores=return_scores, **kwargs)
-            results.append(result)
-        return results
 
     def _get_predictions(self, sentences: list) -> tuple:
         encoding = self._tokenize_sentences(sentences)
@@ -228,9 +220,18 @@ class ExtSumPredictor:
         texts: Union[str, list],
         max_sentences: int = 10,
         balanced: bool = True,
+        remove_duplicates: bool = True,
+        similarity_threshold: float = 0.9,
     ) -> list:
         """
         Generate a combined summary from all categories.
+
+        Args:
+            texts: Input text or list of sentences
+            max_sentences: Maximum sentences to extract
+            balanced: Whether to balance sentences across categories
+            remove_duplicates: Whether to remove duplicate/similar sentences
+            similarity_threshold: Threshold for considering sentences as duplicates
         """
         results, scores = self.predict(texts, return_scores=True)
 
@@ -268,4 +269,69 @@ class ExtSumPredictor:
         else:
             selected = [item["sentence"] for item in all_sentences[:max_sentences]]
 
+        if remove_duplicates:
+            selected = self._deduplicate_sentences(
+                selected, similarity_threshold=similarity_threshold
+            )
+
         return selected
+
+    def _calculate_similarity(self, sent1: str, sent2: str) -> float:
+        inputs1 = self.tokenizer(
+            sent1, return_tensors="pt", truncation=True, max_length=512
+        )
+        inputs2 = self.tokenizer(
+            sent2, return_tensors="pt", truncation=True, max_length=512
+        )
+
+        inputs1 = {k: v.to(self.config.device) for k, v in inputs1.items()}
+        inputs2 = {k: v.to(self.config.device) for k, v in inputs2.items()}
+
+        with torch.no_grad():
+            outputs1 = self.model.bert(**inputs1)
+            outputs2 = self.model.bert(**inputs2)
+
+            # Use [CLS] token embeddings
+            emb1 = outputs1.last_hidden_state[:, 0, :].squeeze()
+            emb2 = outputs2.last_hidden_state[:, 0, :].squeeze()
+
+        similarity = F.cosine_similarity(emb1.unsqueeze(0), emb2.unsqueeze(0))
+
+        return similarity.item()
+
+    def _deduplicate_sentences(
+        self,
+        sentences: list,
+        similarity_threshold: float = 0.9,
+        use_exact_match: bool = True,
+    ) -> list:
+        """
+        Remove duplicate or highly similar sentences.
+        """
+        if not sentences:
+            return sentences
+
+        if use_exact_match:
+            seen = set()
+            unique_sentences = []
+            for sent in sentences:
+                sent_lower = sent.lower().strip()
+                if sent_lower not in seen:
+                    seen.add(sent_lower)
+                    unique_sentences.append(sent)
+            sentences = unique_sentences
+
+        if similarity_threshold < 1.0:
+            final_sentences = []
+            for _, sent in enumerate(sentences):
+                is_duplicate = False
+                for _, kept_sent in enumerate(final_sentences):
+                    sim = self._calculate_similarity(sent, kept_sent)
+                    if sim > similarity_threshold:
+                        is_duplicate = True
+                        break
+                if not is_duplicate:
+                    final_sentences.append(sent)
+            return final_sentences
+
+        return sentences
