@@ -4,6 +4,7 @@ import argparse
 from src.ner.predictor import NerPredictor, NerEntity
 from src.input_processor import InputProcessor
 from typing import Optional
+from src.ner.config import NerConfig
 
 
 class NerPredictScript:
@@ -14,10 +15,18 @@ class NerPredictScript:
             type=str,
             help="Path to the text file for NER prediction",
         )
+        parser.add_argument(
+            "--return-conf",
+            action="store_true",
+            help="Return confidence scores for entities",
+        )
         self.args = parser.parse_args()
 
     def run(self) -> None:
-        self.predictor = NerPredictor()
+        config = NerConfig(
+            return_confidence=self.args.return_conf,
+        )
+        self.predictor = NerPredictor(config=config)
 
         if self.args.file is not None:
             self.ip = InputProcessor()
@@ -47,7 +56,10 @@ class NerPredictScript:
             return
 
         for ent in entities:
-            print(f"  {ent.text} -> {ent.label} ({ent.confidence:.2f})")
+            output = f"  {ent.text} -> {ent.label}"
+            if self.predictor.config.return_confidence:
+                output += f" ({ent.confidence:.2f})"
+            print(output)
 
 
 if __name__ == "__main__":

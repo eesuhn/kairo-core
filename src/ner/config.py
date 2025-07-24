@@ -32,13 +32,15 @@ class NerConfig:
 
     # Data processing
     ignore_index: int = -100
-    max_length: int = 128
+    max_length: int = 512  # TODO: Make this dynamic based on input lengths
 
     # Output
     model_dir: Path = MODEL_DIR / "ner"
 
     # Predict
     confidence_threshold: float = 0.0
+    return_confidence: bool = False
+    aggregate_subtokens: bool = True
 
     # Others
     seed: int = 42

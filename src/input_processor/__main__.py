@@ -4,33 +4,33 @@ import justsdk
 from pathlib import Path
 from typing import Union
 from .audio_processor import AudioProcessor
+from configs._constants import ROOT_PATH
 
 
 class InputProcessor:
     TEXT_EXT = (".pdf", ".docx")
     AUDIO_EXT = (".mp3", ".mp4")
 
-    def __init__(self) -> None:
-        pass
-
-    def process(self, input_file: Path) -> Union[str, dict]:
+    @staticmethod
+    def process(input_path: Path) -> Union[str, dict]:
         """
-        Process the input file based on its type:
-            - Text files eg. `.pdf`, `.docx`
-            - Audio files eg. `.mp3`, `.mp4`
+        Process the input file based on supported formats
         """
-        if not input_file.exists():
-            raise FileNotFoundError(f"File not found: {input_file}")
+        input_path = ROOT_PATH / input_path
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
 
-        file_ext = input_file.suffix.lower()
-        if file_ext in self.TEXT_EXT:
-            return self._process_text_file(input_file)
-        elif file_ext in self.AUDIO_EXT:
-            return self._process_audio_file(input_file)
+        file_ext = input_path.suffix.lower()
+        if file_ext in InputProcessor.TEXT_EXT:
+            return InputProcessor._process_text_file(input_path)
+
+        elif file_ext in InputProcessor.AUDIO_EXT:
+            return InputProcessor._process_audio_file(input_path)
+
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-    def _process_text_file(self, file_path: Path) -> str:
+    def _process_text_file(file_path: Path) -> str:
         """
         Extract text from text-based files like `.pdf`
         """
@@ -39,6 +39,6 @@ class InputProcessor:
         text = "".join([content.load_page(i).get_text() for i in range(len(content))])
         return text
 
-    def _process_audio_file(self, file_path: Path) -> dict:
+    def _process_audio_file(file_path: Path) -> dict:
         ap = AudioProcessor()
         return ap.process(file_path)

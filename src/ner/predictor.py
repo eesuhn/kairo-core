@@ -33,12 +33,12 @@ class NerEntity:
 
 
 class NerPredictor:
-    def __init__(self) -> None:
+    def __init__(self, config: NerConfig) -> None:
         if not MODEL_NER_BEST_PATH.exists():
             raise FileNotFoundError(f"Model not found at {MODEL_NER_BEST_PATH}")
 
         justsdk.print_info(f"Loading NER model from {MODEL_NER_BEST_PATH}")
-        self.config = NerConfig()
+        self.config = config
         self.uni_labels, _ = NerHelper.get_uni_label_map()
         self.id_to_label = {i: label for i, label in enumerate(self.uni_labels)}
 
@@ -55,9 +55,6 @@ class NerPredictor:
         self.tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(
             self.config.base_model_name
         )
-
-        self.return_confidence: bool = False
-        self.aggregate_subtokens: bool = True
 
     def predict(
         self,
@@ -133,7 +130,7 @@ class NerPredictor:
         for _, (word_id, pred_id, conf) in enumerate(zip(word_ids, preds, confidences)):
             if word_id is None:
                 continue
-            if self.aggregate_subtokens and word_id in processed_word_ids:
+            if self.config.aggregate_subtokens and word_id in processed_word_ids:
                 # NOTE: Skip processing subtokens
                 continue
 
@@ -162,8 +159,7 @@ class NerPredictor:
                     label=label[2:],  # Remove "B-" prefix
                     start=word_id,
                     end=word_id,
-                    # NOTE: Default to 1.0 if return_confidence is False
-                    confidence=float(conf) if self.return_confidence else 1.0,
+                    confidence=float(conf),
                 )
 
             elif (
@@ -174,7 +170,7 @@ class NerPredictor:
                 current_ent.text += " " + tokens[word_id]
                 current_ent.end = word_id
 
-                if self.return_confidence:
+                if self.config.return_confidence:
                     n_tokens = (
                         current_ent.end - current_ent.start + 1
                     )  # XXX: Does this always equal to zero?
