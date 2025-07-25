@@ -109,7 +109,7 @@ class AbsSumPredictor:
         # TODO: Abstract these to `AbsSumConfig`
         THRESHOLDS = [32, 128, 512]
         BASE_MIN_RATIO = 0.4
-        BASE_MAX_RATIO = 0.8
+        BASE_MAX_RATIO = 0.6
 
         tier = 0
         for threshold in THRESHOLDS:
@@ -122,16 +122,16 @@ class AbsSumPredictor:
         max_ratio = BASE_MAX_RATIO / (2**tier)
 
         min_words = max(2, int(word_count * min_ratio))
-        max_words = max(10, int(word_count * max_ratio))
+        max_words = max(8, int(word_count * max_ratio))
 
         min_length = int(min_words * 1.2)
         max_length = int(max_words * 1.2)
 
         min_length = max(2, min(min_length, 200))
-        max_length = max(10, min(max_length, 400))
+        max_length = max(8, min(max_length, 400))
 
         if min_length >= max_length:
-            max_length = min_length + 10
+            max_length = min_length + 8
 
         dynamic_config = self.gen_conf.copy()
         dynamic_config.update(

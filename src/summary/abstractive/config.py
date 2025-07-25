@@ -44,8 +44,8 @@ class AbsSumConfig:
     no_repeat_ngram_size: int = 3
     early_stopping: bool = False
     gen_batch_size: int = 8
-    gen_max_length: int = 200  # TODO: Make this dynamic based on input length
-    gen_min_length: int = 20  # TODO: Make this dynamic based on input length
+    gen_max_length: int = 100
+    gen_min_length: int = 10
     gen_num_beams: int = 4
 
     # Others

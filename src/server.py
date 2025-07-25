@@ -2,9 +2,10 @@ import uvicorn
 import socket
 
 from contextlib import closing
+from typing import Optional
 
 
-def find_free_port(start_port=8000, max_port=8010):
+def find_free_port(start_port: int = 8000, max_port: int = 8010) -> Optional[int]:
     for port in range(start_port, max_port + 1):
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
             if sock.connect_ex(("127.0.0.1", port)) != 0:
@@ -12,7 +13,7 @@ def find_free_port(start_port=8000, max_port=8010):
     return None
 
 
-def main():
+def main() -> None:
     port = find_free_port()
 
     if port is None:

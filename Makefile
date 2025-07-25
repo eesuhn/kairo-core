@@ -16,7 +16,7 @@ $(VENV)/bin/activate: pyproject.toml
 server:
 	@uv run -m src.server
 
-hf-data:
+data:
 	@uv run -m src.inter_data_handler
 
 ner-train-local:
@@ -78,5 +78,5 @@ dvc-clean:
 
 .PHONY: all venv upgrade format check check-fix clean test \
 		notebooks nb-clean nb-update dvc-status dvc-pull \
-		dvc-push dvc-clean hf-data dvc-setup ner-train-local \
+		dvc-push dvc-clean data dvc-setup ner-train-local \
 		server
