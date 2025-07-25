@@ -27,11 +27,13 @@ def sample_text_file() -> Path:
     return SAMPLE_DATA_DIR / "text" / f"{SAMPLE_TEXT_TARGET}.pdf"
 
 
+@DeprecationWarning
 @pytest.fixture(scope="session")
 def text_processing_result(sample_text_file: Path) -> dict:
     return InputProcessor.process(sample_text_file)
 
 
+@DeprecationWarning
 def test_audio_processor(audio_processing_result: dict, capsys) -> None:
     captured = capsys.readouterr()
     print(captured.out)

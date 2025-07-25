@@ -1,6 +1,7 @@
 import pymupdf
 import warnings
 
+from http import HTTPStatus
 from pathlib import Path
 from .audio_processor import AudioProcessor
 from configs._constants import ROOT_PATH
@@ -14,22 +15,49 @@ class InputProcessor:
     AUDIO_EXT = (".mp3", ".mp4")
 
     @staticmethod
-    def process(input_path: Path) -> str:
+    def process(input_path: Path) -> dict:
         """
-        Process the input file based on supported formats
+        Process the input file based on supported formats.
+
+        Returns:
+            status (in dict): Status of the processing, either "success" or "error".
+            status_code (in dict): HTTP status code indicating the result of the processing.
+            content (in dict): Extracted content from the file, or an error message.
         """
-        full_path = ROOT_PATH / input_path
-        if not full_path.exists():
-            raise FileNotFoundError(f"File not found: {full_path}")
+        try:
+            full_path = ROOT_PATH / input_path
+            if not full_path.exists():
+                return {
+                    "status": "error",
+                    "status_code": HTTPStatus.NOT_FOUND,
+                    "error": f"File not found: {input_path}",
+                }
 
-        file_ext = full_path.suffix.lower()
+            file_ext = full_path.suffix.lower()
 
-        if file_ext in InputProcessor.TEXT_EXT:
-            return InputProcessor._process_text_file(full_path)
-        elif file_ext in InputProcessor.AUDIO_EXT:
-            return InputProcessor._process_audio_file(full_path)
-        else:
-            raise ValueError(f"Unsupported file type: {file_ext}")
+            if file_ext in InputProcessor.TEXT_EXT:
+                content = InputProcessor._process_text_file(full_path)
+            elif file_ext in InputProcessor.AUDIO_EXT:
+                content = InputProcessor._process_audio_file(full_path)
+            else:
+                return {
+                    "status": "error",
+                    "status_code": HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "error": f"Unsupported file type: {file_ext}",
+                }
+
+            return {
+                "status": "success",
+                "status_code": HTTPStatus.OK,
+                "content": content,
+            }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "status_code": HTTPStatus.INTERNAL_SERVER_ERROR,
+                "error": str(e),
+            }
 
     @staticmethod
     def _process_text_file(file_path: Path) -> str:

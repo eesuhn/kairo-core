@@ -19,8 +19,12 @@ class SumPredictScript:
         if self.args.file is not None:
             self.ip = InputProcessor()
 
-            # TODO: Support audio script
-            texts = self.ip.process(self.args.file)
+            payload = self.ip.process(self.args.file)
+            if payload["status"] != "success":
+                justsdk.print_error("Failed to process the input file.")
+                return
+            texts = payload["content"]
+
             abs_sum = Summary.abstract_summarize(texts=texts)
             ext_sum = Summary.extract_summarize(texts=texts)
 
@@ -46,7 +50,7 @@ class SumPredictScript:
     def _print_summaries(self, summaries: dict) -> None:
         abs_sum = summaries.get("abstract", [])
         justsdk.print_success("Abstract:")
-        print(abs_sum)
+        justsdk.print_data(abs_sum)
 
         ext_sum = summaries.get("extractive", [])
         justsdk.print_success("Extractive:")
