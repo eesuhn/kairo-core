@@ -1,8 +1,5 @@
-## Kairo Core
+### Get started
 
-### 🔥 Getting started...
-
-#### 1. Start server
 ```
 make server
 ```
