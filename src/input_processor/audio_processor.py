@@ -57,7 +57,9 @@ class AudioProcessorConfig:
 
 class AudioProcessor:
     def __init__(self, quiet: bool = False) -> None:
+        self.quiet = quiet
         self.cp = justsdk.ColorPrinter(quiet=quiet)
+
         self.acp = AudioProcessorConfig()
         self.whisper_model = self._init_whisper_model()
         self.diarization_pipeline = self._init_diarization_pipeline()
@@ -162,9 +164,14 @@ class AudioProcessor:
     def _diarize(self, audio_file: Path) -> dict:
         self.cp.info(f"Diarizing audio: {str(audio_file)}")
         try:
-            with ProgressHook() as hook:
-                diarization = self.diarization_pipeline(file=str(audio_file), hook=hook)
-                return self._diarize_annotation_to_dict(diarization)
+            if self.quiet:
+                diarization = self.diarization_pipeline(file=str(audio_file))
+            else:
+                with ProgressHook() as hook:
+                    diarization = self.diarization_pipeline(
+                        file=str(audio_file), hook=hook
+                    )
+            return self._diarize_annotation_to_dict(diarization)
         except Exception as e:
             raise RuntimeError(f"Failed to diarize {audio_file}: {e}")
 

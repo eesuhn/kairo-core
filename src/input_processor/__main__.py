@@ -1,10 +1,14 @@
 import pymupdf
 import justsdk
+import warnings
 
 from pathlib import Path
 from typing import Union
 from .audio_processor import AudioProcessor
 from configs._constants import ROOT_PATH
+
+
+warnings.filterwarnings("ignore")
 
 
 class InputProcessor:
@@ -13,7 +17,7 @@ class InputProcessor:
     AUDIO_EXT = (".mp3", ".mp4")
 
     @staticmethod
-    def process(input_path: Path, quiet: bool = False) -> Union[str, dict]:
+    def process(input_path: Path, quiet: bool = True) -> Union[str, dict]:
         """
         Process the input file based on supported formats
         """
@@ -43,6 +47,20 @@ class InputProcessor:
         text = "".join([content.load_page(i).get_text() for i in range(len(content))])
         return text
 
-    def _process_audio_file(file_path: Path, quiet: bool = False) -> dict:
+    def _format_audio_segments(segments_data: dict) -> str:
+        if "segments" not in segments_data:
+            return ""
+
+        formatted_lines = []
+        for segment in segments_data["segments"]:
+            speaker = segment.get("speaker", "UNKNOWN")
+            text = segment.get("text", "").strip()
+            if text:
+                formatted_lines.append(f"{speaker}: {text}")
+
+        return "\n".join(formatted_lines)
+
+    def _process_audio_file(file_path: Path, quiet: bool = False) -> str:
         ap = AudioProcessor(quiet=quiet)
-        return ap.process(file_path)
+        segments_data = ap.process(file_path)
+        return InputProcessor._format_audio_segments(segments_data)
