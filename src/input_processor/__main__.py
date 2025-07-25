@@ -1,12 +1,9 @@
 import pymupdf
-import justsdk
 import warnings
 
 from pathlib import Path
-from typing import Union
 from .audio_processor import AudioProcessor
 from configs._constants import ROOT_PATH
-
 
 warnings.filterwarnings("ignore")
 
@@ -17,50 +14,46 @@ class InputProcessor:
     AUDIO_EXT = (".mp3", ".mp4")
 
     @staticmethod
-    def process(input_path: Path, quiet: bool = True) -> Union[str, dict]:
+    def process(input_path: Path) -> str:
         """
         Process the input file based on supported formats
         """
-        input_path = ROOT_PATH / input_path
-        if not input_path.exists():
-            raise FileNotFoundError(f"File not found: {input_path}")
+        full_path = ROOT_PATH / input_path
+        if not full_path.exists():
+            raise FileNotFoundError(f"File not found: {full_path}")
 
-        file_ext = input_path.suffix.lower()
+        file_ext = full_path.suffix.lower()
+
         if file_ext in InputProcessor.TEXT_EXT:
-            return InputProcessor._process_text_file(input_path, quiet=quiet)
-
+            return InputProcessor._process_text_file(full_path)
         elif file_ext in InputProcessor.AUDIO_EXT:
-            return InputProcessor._process_audio_file(input_path, quiet=quiet)
-
+            return InputProcessor._process_audio_file(full_path)
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-    def _process_text_file(file_path: Path, quiet: bool = False) -> str:
+    @staticmethod
+    def _process_text_file(file_path: Path) -> str:
         """
         Extract text from text-based files like `.pdf`
         """
-        if not quiet:
-            justsdk.print_info(
-                f"Processing text file: {file_path}", newline_before=True
-            )
-        content = pymupdf.open(file_path)
-        text = "".join([content.load_page(i).get_text() for i in range(len(content))])
-        return text
+        with pymupdf.open(file_path) as doc:
+            return "".join(page.get_text() for page in doc)
 
+    @staticmethod
     def _format_audio_segments(segments_data: dict) -> str:
-        if "segments" not in segments_data:
-            return ""
+        """
+        Format audio segments into readable text
+        """
+        segments = segments_data.get("segments", [])
 
-        formatted_lines = []
-        for segment in segments_data["segments"]:
-            speaker = segment.get("speaker", "UNKNOWN")
-            text = segment.get("text", "").strip()
-            if text:
-                formatted_lines.append(f"{speaker}: {text}")
+        return "\n".join(
+            f"{segment.get('speaker', 'UNKNOWN')}: {text}"
+            for segment in segments
+            if (text := segment.get("text", "").strip())
+        )
 
-        return "\n".join(formatted_lines)
-
-    def _process_audio_file(file_path: Path, quiet: bool = False) -> str:
-        ap = AudioProcessor(quiet=quiet)
-        segments_data = ap.process(file_path)
+    @staticmethod
+    def _process_audio_file(file_path: Path) -> str:
+        audio_processor = AudioProcessor(quiet=True)
+        segments_data = audio_processor.process(file_path)
         return InputProcessor._format_audio_segments(segments_data)

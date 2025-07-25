@@ -48,7 +48,7 @@ class AbsSumPredictor:
         ensure_capitalized: bool = True,
         ensure_complete_sentence: bool = True,
         dynamic_length: bool = True,
-    ) -> list:
+    ) -> Union[str, list[str]]:
         single_str = isinstance(texts, str)
         if single_str:
             texts = [texts]
