@@ -57,10 +57,10 @@ class AudioProcessorConfig:
 
 class AudioProcessor:
     def __init__(self, quiet: bool = False) -> None:
+        self.cp = justsdk.ColorPrinter(quiet=quiet)
         self.acp = AudioProcessorConfig()
         self.whisper_model = self._init_whisper_model()
         self.diarization_pipeline = self._init_diarization_pipeline()
-        self.cp = justsdk.ColorPrinter(quiet=quiet)
 
     def process(self, input_file: Path) -> dict:
         """
@@ -72,10 +72,51 @@ class AudioProcessor:
         self.cp.info(f"Processing audio: {str(input_file)}")
         transcription = self._transcribe(input_file)
         diarization = self._diarize(input_file)
-        return {
-            "transcription": transcription,
-            "diarization": diarization,
-        }
+
+        matched_segments = self._match_transcription_with_speakers(
+            transcription["segments"], diarization["segments"]
+        )
+
+        return {"segments": matched_segments}
+
+    def _match_transcription_with_speakers(
+        self, transcription_segments: list, diarization_segments: list
+    ) -> list:
+        matched_segments = []
+
+        for segment in transcription_segments:
+            segment_start = segment.start
+            segment_end = segment.end
+            segment_mid = (segment_start + segment_end) / 2
+
+            best_speaker = "UNKNOWN"
+            max_overlap = 0
+
+            for diar_segment in diarization_segments:
+                diar_start = diar_segment["start"]
+                diar_end = diar_segment["end"]
+
+                overlap_start = max(segment_start, diar_start)
+                overlap_end = min(segment_end, diar_end)
+                overlap_duration = max(0, overlap_end - overlap_start)
+
+                if overlap_duration > max_overlap:
+                    max_overlap = overlap_duration
+                    best_speaker = diar_segment["label"]
+                elif max_overlap == 0 and diar_start <= segment_mid <= diar_end:
+                    best_speaker = diar_segment["label"]
+
+            matched_segments.append(
+                {
+                    "id": segment.id,
+                    "start": segment_start,
+                    "end": segment_end,
+                    "text": segment.text,
+                    "speaker": best_speaker,
+                }
+            )
+
+        return matched_segments
 
     def _init_whisper_model(self) -> WhisperModel:
         try:

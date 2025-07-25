@@ -19,7 +19,7 @@ def sample_audio_file() -> Path:
 
 @pytest.fixture(scope="session")
 def audio_processing_result(sample_audio_file: Path) -> dict:
-    return InputProcessor.process(sample_audio_file)
+    return InputProcessor.process(sample_audio_file, quiet=True)
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +29,7 @@ def sample_text_file() -> Path:
 
 @pytest.fixture(scope="session")
 def text_processing_result(sample_text_file: Path) -> dict:
-    return InputProcessor.process(sample_text_file)
+    return InputProcessor.process(sample_text_file, quiet=True)
 
 
 def test_audio_processor(audio_processing_result: dict, capsys) -> None:
@@ -37,8 +37,6 @@ def test_audio_processor(audio_processing_result: dict, capsys) -> None:
     print(captured.out)
 
     assert audio_processing_result is not None
-    assert "transcription" in audio_processing_result
-    assert "diarization" in audio_processing_result
 
     _save_audio_processing_result(audio_processing_result)
 

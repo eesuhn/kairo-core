@@ -43,6 +43,6 @@ class InputProcessor:
         text = "".join([content.load_page(i).get_text() for i in range(len(content))])
         return text
 
-    def _process_audio_file(file_path: Path) -> dict:
-        ap = AudioProcessor()
+    def _process_audio_file(file_path: Path, quiet: bool = False) -> dict:
+        ap = AudioProcessor(quiet=quiet)
         return ap.process(file_path)
