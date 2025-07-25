@@ -1,6 +1,6 @@
 # ❒ Kairo Core
 
-Core server for Kairo — an NLP-powered AI note taker.
+Core server for Kairo — an NLP-powered note taker.
 
 ## Features
 
