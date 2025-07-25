@@ -11,9 +11,9 @@ class NerConfig:
     freeze_bert: bool = False
 
     # Training
-    batch_size: int = 128
+    batch_size: int = 64
     epochs: int = 10
-    learning_rate: float = 5e-5
+    learning_rate: float = 1e-4
     dropout_rate: float = 0.1
     num_workers: int = 8  # NOTE: Tune it down if you using a toaster
     weight_decay: float = 0.01

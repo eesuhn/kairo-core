@@ -1,11 +1,12 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
   title: Kairo Core
   version: 1.0.0
-  description: API for processing documents, extracting entities, and generating summaries
+  description: ""
+
 servers:
   - url: http://localhost:8000
-    description: Local development server
+
 paths:
   /:
     get:
@@ -356,6 +357,7 @@ paths:
                 properties:
                   error:
                     type: string
+
 components:
   schemas:
     FileInfo:

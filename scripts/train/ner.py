@@ -64,7 +64,7 @@ class NerTrainScript:
         parser.add_argument(
             "--batch-size",
             type=int,
-            default=32,
+            default=64,
             help="Batch size for training.",
         )
         parser.add_argument(
