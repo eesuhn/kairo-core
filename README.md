@@ -9,7 +9,7 @@ Refer to this [OpenAPI Spec](./reports/oas.yml) for the complete list of API end
 ## How to use this?
 
 > [!IMPORTANT]
-> - Install [uv](https://docs.astral.sh/uv/getting-started/installation/) before proceedings.
+> Install [uv](https://docs.astral.sh/uv/getting-started/installation/) before proceedings.
 
 Before you begin, ensure the following prerequisites are met:
 
