@@ -1,0 +1,461 @@
+openapi: 3.0.3
+info:
+  title: Kairo Core
+  version: 1.0.0
+  description: API for processing documents, extracting entities, and generating summaries
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+paths:
+  /:
+    get:
+      summary: Health Check
+      description: Check if the Kairo Core service is running
+      operationId: root
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Kairo Core is running
+                  status:
+                    type: string
+                    example: healthy
+  /process/upload:
+    post:
+      summary: Process Uploaded File
+      description: Upload and process a file (PDF, DOCX, MP3, MP4)
+      operationId: process_uploaded_file
+      parameters:
+        - name: cleanup
+          in: query
+          description: Whether to delete the file after processing
+          required: false
+          schema:
+            type: boolean
+            default: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload (PDF, DOCX, MP3, MP4)
+              required:
+                - file
+      responses:
+        "200":
+          description: File processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessResult"
+        "415":
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /process/batch:
+    post:
+      summary: Process Batch Files
+      description: Upload and process multiple files (max 10)
+      operationId: process_batch_files
+      parameters:
+        - name: cleanup
+          in: query
+          description: Whether to delete files after processing
+          required: false
+          schema:
+            type: boolean
+            default: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: List of files to upload
+                  maxItems: 10
+              required:
+                - files
+      responses:
+        "200":
+          description: Files processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProcessResult"
+        "400":
+          description: Bad request (e.g., batch size exceeds limit)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  status_code:
+                    type: integer
+                    example: 500
+                  error:
+                    type: string
+                  partial_results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProcessResult"
+  /ner/extract:
+    post:
+      summary: Extract Named Entities
+      description: Extract named entities from text
+      operationId: extract_entities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                texts:
+                  oneOf:
+                    - type: string
+                      description: Single text string
+                    - type: array
+                      items:
+                        type: string
+                      description: Array of text strings
+              required:
+                - texts
+      responses:
+        "200":
+          description: Entities extracted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NERResult"
+        "400":
+          description: Bad request (missing texts field)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /summary/abstractive:
+    post:
+      summary: Generate Abstractive Summary
+      description: Generate abstractive summary from text
+      operationId: generate_abstractive_summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                texts:
+                  oneOf:
+                    - type: string
+                      description: Single text string
+                    - type: array
+                      items:
+                        type: string
+                      description: Array of text strings
+              required:
+                - texts
+      responses:
+        "200":
+          description: Summary generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SummaryResult"
+        "400":
+          description: Bad request (missing texts field)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /summary/extractive:
+    post:
+      summary: Generate Extractive Summary
+      description: Generate extractive summary from text
+      operationId: generate_extractive_summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                texts:
+                  oneOf:
+                    - type: string
+                      description: Single text string
+                    - type: array
+                      items:
+                        type: string
+                      description: Array of text strings
+              required:
+                - texts
+      responses:
+        "200":
+          description: Summary generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SummaryResult"
+        "400":
+          description: Bad request (missing texts field)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /pipeline/full:
+    post:
+      summary: Full Processing Pipeline
+      description: >-
+        Complete pipeline - Upload file -> Process -> Extract entities ->
+        Generate summaries
+      operationId: full_pipeline
+      parameters:
+        - name: cleanup
+          in: query
+          description: Whether to delete the file after processing
+          required: false
+          schema:
+            type: boolean
+            default: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to process
+              required:
+                - file
+      responses:
+        "200":
+          description: Pipeline completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineResult"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /uploads/list:
+    get:
+      summary: List Uploaded Files
+      description: Get list of files in the uploads directory
+      operationId: list_uploads
+      responses:
+        "200":
+          description: List retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      type: string
+                    description: List of filenames
+                  count:
+                    type: integer
+                    description: Total number of files
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /uploads/cleanup:
+    delete:
+      summary: Cleanup Uploads
+      description: Delete all files from the uploads directory
+      operationId: cleanup_uploads
+      responses:
+        "200":
+          description: Cleanup completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Deleted 5 files
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+components:
+  schemas:
+    FileInfo:
+      type: object
+      properties:
+        filename:
+          type: string
+        size:
+          type: integer
+        content_type:
+          type: string
+    ProcessResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+            - error
+        status_code:
+          type: integer
+        content:
+          type: string
+          description: Processed content from the file
+        file_info:
+          $ref: "#/components/schemas/FileInfo"
+        error:
+          type: string
+          description: Error message if status is error
+    NERResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+            - error
+        status_code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          description: Extracted entities data
+    SummaryResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+            - error
+        status_code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          description: Generated summary data
+    PipelineResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+            - error
+        status_code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            file_info:
+              $ref: "#/components/schemas/FileInfo"
+            content:
+              type: string
+            entities:
+              type: object
+              description: Extracted entities
+            abstractive_summary:
+              type: object
+              description: Abstractive summary
+            extractive_summary:
+              type: object
+              description: Extractive summary
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          default: error
+        status_code:
+          type: integer
+        message:
+          type: string
+        detail:
+          type: string
+        error:
+          type: string
+        data:
+          type: object
