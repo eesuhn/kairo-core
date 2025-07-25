@@ -1,7 +1,7 @@
 import justsdk
 import argparse
 
-from src.summary import SumMain
+from src.summary import Summary
 from src.input_processor import InputProcessor
 
 
@@ -16,14 +16,19 @@ class SumPredictScript:
         self.args = parser.parse_args()
 
     def run(self) -> None:
-        self.sum = SumMain()
-
         if self.args.file is not None:
             self.ip = InputProcessor()
 
             # TODO: Support audio script
-            target = self.ip.process(self.args.file)
-            summaries = self.sum.summarize(texts=target)
+            texts = self.ip.process(self.args.file)
+            abs_sum = Summary.abstract_summarize(texts=texts)
+            ext_sum = Summary.extract_summarize(texts=texts)
+
+            summaries = {
+                "abstract": abs_sum,
+                "extractive": ext_sum,
+            }
+
             self._print_summaries(summaries)
 
         else:  # Interactive mode

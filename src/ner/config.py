@@ -35,10 +35,12 @@ class NerConfig:
 
     # Output
     model_dir: Path = MODEL_DIR / "ner"
+    deduplicate_entities: bool = True
+    similarity_threshold: float = 0.8
 
     # Predict
     confidence_threshold: float = 0.0
-    return_confidence: bool = False
+    return_confidence: bool = True
     aggregate_subtokens: bool = True
 
     # Others

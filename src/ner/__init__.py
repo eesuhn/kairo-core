@@ -2,7 +2,7 @@ from .model import NerModel
 from .predictor import NerPredictor, NerEntity
 from .trainer import NerTrainer
 from .config import NerConfig
-from .__main__ import NerMain
+from .__main__ import Ner
 
 __version__ = "1.0.0"
 
@@ -12,5 +12,5 @@ __all__ = [
     "NerEntity",
     "NerTrainer",
     "NerConfig",
-    "NerMain",
+    "Ner",
 ]

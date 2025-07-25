@@ -2,7 +2,7 @@ import justsdk
 import argparse
 
 from src.input_processor import InputProcessor
-from src.ner import NerMain
+from src.ner import Ner, NerEntity
 
 
 class NerPredictScript:
@@ -21,14 +21,12 @@ class NerPredictScript:
         self.args = parser.parse_args()
 
     def run(self) -> None:
-        self.ner = NerMain()
-
         if self.args.file is not None:
             self.ip = InputProcessor()
 
             # TODO: Support audio script
             target = self.ip.process(self.args.file)
-            entities = self.ner.extract_entities(texts=target)
+            entities = Ner.extract_entities(texts=target)
             self._print_entities(entities)
 
         else:  # Interactive mode
@@ -42,16 +40,16 @@ class NerPredictScript:
                     break
 
                 if text:
-                    entities = self.ner.extract_entities(texts=text)
+                    entities = Ner.extract_entities(texts=text)
                     self._print_entities(entities)
 
-    def _print_entities(self, entities: list) -> None:
+    def _print_entities(self, entities: list[NerEntity]) -> None:
         if not entities:
             justsdk.print_warning("No entities found.")
             return
 
         for ent in entities:
-            print(f"  {ent.text} -> {ent.label}")
+            print(f"  {ent.text} -> {ent.label} ({ent.confidence:.2f})")
 
 
 if __name__ == "__main__":

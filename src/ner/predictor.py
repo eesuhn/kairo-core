@@ -1,6 +1,8 @@
 import justsdk
 import torch
 import numpy as np
+import torch.nn.functional as F
+import re
 
 from .model import NerModel
 from .config import NerConfig
@@ -9,6 +11,7 @@ from configs._constants import MODEL_DIR
 from transformers import BertTokenizerFast
 from typing import Union
 from dataclasses import dataclass
+from src.summary.extractive import ExtSumModel, ExtSumConfig
 
 
 MODEL_NER_BEST_PATH = MODEL_DIR / "ner" / "model.pt"
@@ -58,29 +61,27 @@ class NerPredictor:
             self.config.base_model_name
         )
 
-    def predict(
-        self,
-        texts: Union[str, list[str]],
-    ) -> list:
-        # Handle single string
-        single_str: bool = isinstance(texts, str)
+        # For deduplication
+        ext_sum_config = ExtSumConfig(quiet=True)
+        self.ext_sum_model = ExtSumModel(config=ext_sum_config)
+        self.ext_sum_model.to(self.config.device)
+        self.ext_sum_model.eval()
 
-        if single_str:
-            texts = [texts]
+    def predict(self, texts: Union[str, list[str]]) -> list:
+        single_str = isinstance(texts, str)
+        texts = [texts] if single_str else texts
 
-        # Process in batches
-        all_ent: list = []
+        all_entities = []
         for i in range(0, len(texts), self.config.batch_size):
-            batch_texts = texts[i : i + self.config.batch_size]
-            batch_ents = self._predict_batch(batch_texts)
-            all_ent.extend(batch_ents)
+            batch = texts[i : i + self.config.batch_size]
+            all_entities.extend(self._predict_batch(batch))
 
-        return all_ent[0] if single_str else all_ent
+        if self.config.deduplicate_entities:
+            all_entities = [self._deduplicate_entities(ents) for ents in all_entities]
 
-    def _predict_batch(
-        self,
-        texts: list[str],
-    ) -> list:
+        return all_entities[0] if single_str else all_entities
+
+    def _predict_batch(self, texts: list[str]) -> list:
         tokens = [text.split() for text in texts]
 
         encoding = self.tokenizer(
@@ -92,31 +93,20 @@ class NerPredictor:
             return_tensors="pt",
         )
 
-        # Keep original encoding for word_ids, create separate dict for model input
         model_inputs = {k: v.to(self.config.device) for k, v in encoding.items()}
 
         with torch.no_grad():
-            outputs = self.model(**model_inputs)
-            logits = outputs["logits"]
-
-            # Get predictions
+            logits = self.model(**model_inputs)["logits"]
             probs = torch.softmax(logits, dim=-1)
-            preds = torch.argmax(probs, dim=-1)
-            confidences = torch.max(probs, dim=-1).values
+            preds = torch.argmax(probs, dim=-1).cpu().numpy()
+            confidences = torch.max(probs, dim=-1).values.cpu().numpy()
 
-        preds = preds.cpu().numpy()
-        confidences = confidences.cpu().numpy()
-
-        batch_ents: list = []
-        for batch_i in range(len(texts)):
-            entities = self._extract_entities(
-                tokens=tokens[batch_i],
-                preds=preds[batch_i],
-                confidences=confidences[batch_i],
-                word_ids=encoding.word_ids(batch_index=batch_i),
+        return [
+            self._extract_entities(
+                tokens[i], preds[i], confidences[i], encoding.word_ids(i)
             )
-            batch_ents.append(entities)
-        return batch_ents
+            for i in range(len(texts))
+        ]
 
     def _extract_entities(
         self,
@@ -125,40 +115,40 @@ class NerPredictor:
         confidences: np.ndarray,
         word_ids: list,
     ) -> list:
-        entities: list = []
-        current_ent = None
-        processed_word_ids = set()
+        """Extract entities from model predictions"""
+        entities = []
+        current_entity = None
+        processed_words = set()
 
-        for _, (word_id, pred_id, conf) in enumerate(zip(word_ids, preds, confidences)):
-            if word_id is None:
-                continue
-            if self.config.aggregate_subtokens and word_id in processed_word_ids:
-                # NOTE: Skip processing subtokens
+        def _finalize_entity(entity):
+            if entity:
+                entity.text = self._normalize_text(entity.text)
+                entities.append(entity)
+
+        for word_id, pred_id, conf in zip(word_ids, preds, confidences):
+            # NOTE: Skip special tokens and processed subtokens
+            if word_id is None or (
+                self.config.aggregate_subtokens and word_id in processed_words
+            ):
                 continue
 
-            processed_word_ids.add(word_id)
-            label: str = self.id_to_label[pred_id]
+            processed_words.add(word_id)
+            label = self.id_to_label[pred_id]
 
             if conf < self.config.confidence_threshold:
-                if current_ent:
-                    # End current entity if confidence is low
-                    entities.append(current_ent)
-                    current_ent = None
+                _finalize_entity(current_entity)
+                current_entity = None
                 continue
 
-            # End current entity if "O"
             if label == "O":
-                if current_ent:
-                    entities.append(current_ent)
-                    current_ent = None
+                _finalize_entity(current_entity)
+                current_entity = None
 
             elif label.startswith("B-"):
-                if current_ent:
-                    entities.append(current_ent)
-
-                current_ent = NerEntity(
+                _finalize_entity(current_entity)
+                current_entity = NerEntity(
                     text=tokens[word_id],
-                    label=label[2:],  # Remove "B-" prefix
+                    label=label[2:],
                     start=word_id,
                     end=word_id,
                     confidence=float(conf),
@@ -166,28 +156,116 @@ class NerPredictor:
 
             elif (
                 label.startswith("I-")
-                and current_ent
-                and label[2:] == current_ent.label
+                and current_entity
+                and label[2:] == current_entity.label
             ):
-                current_ent.text += " " + tokens[word_id]
-                current_ent.end = word_id
+                # Continue current entity
+                current_entity.text += " " + tokens[word_id]
+                current_entity.end = word_id
 
                 if self.config.return_confidence:
-                    n_tokens = (
-                        current_ent.end - current_ent.start + 1
-                    )  # XXX: Does this always equal to zero?
-                    current_ent.confidence = (
-                        current_ent.confidence * (n_tokens - 1) + float(conf)
-                    ) / n_tokens
-
-            # End current entity if label mismatch
+                    n = current_entity.end - current_entity.start + 1
+                    current_entity.confidence = (
+                        current_entity.confidence * (n - 1) + float(conf)
+                    ) / n
             else:
-                if current_ent:
-                    entities.append(current_ent)
-                    current_ent = None
+                # Label mismatch
+                _finalize_entity(current_entity)
+                current_entity = None
 
-        # Include last entity if exists
-        if current_ent:
-            entities.append(current_ent)
-
+        _finalize_entity(current_entity)
         return entities
+
+    def _calculate_similarity(self, text1: str, text2: str) -> float:
+        inputs = self.tokenizer(
+            [text1, text2],
+            return_tensors="pt",
+            truncation=True,
+            max_length=512,
+            padding=True,
+        )
+        inputs = {k: v.to(self.config.device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = self.ext_sum_model.bert(**inputs)
+            embeddings = outputs.last_hidden_state[:, 0, :]  # [CLS] tokens
+
+        similarity = F.cosine_similarity(embeddings[0:1], embeddings[1:2])
+        return similarity.item()
+
+    def _deduplicate_entities(self, entities: list[NerEntity]) -> list[NerEntity]:
+        if not entities:
+            return entities
+
+        text_groups = {}
+        for i, entity in enumerate(entities):
+            key = self._normalize_text(entity.text)
+            text_groups.setdefault(key, []).append(i)
+
+        deduplicated = []
+        processed = set()
+
+        for indices in text_groups.values():
+            if all(i in processed for i in indices):
+                continue
+
+            label_groups = {}
+            for idx in indices:
+                if idx not in processed:
+                    label_groups.setdefault(entities[idx].label, []).append(idx)
+
+            if label_groups:
+                best_label = max(
+                    label_groups,
+                    key=lambda l: sum(entities[i].confidence for i in label_groups[l]),  # noqa: E741
+                )
+                best_idx = max(
+                    label_groups[best_label], key=lambda i: entities[i].confidence
+                )
+                deduplicated.append(entities[best_idx])
+                processed.update(indices)
+
+        remaining = [i for i in range(len(entities)) if i not in processed]
+
+        for i in remaining:
+            if i in processed:
+                continue
+
+            similar = [i]
+            base_text = self._normalize_text(entities[i].text)
+
+            for j in remaining[i + 1 :]:
+                if j not in processed:
+                    comp_text = self._normalize_text(entities[j].text)
+                    if (
+                        self._calculate_similarity(base_text, comp_text)
+                        >= self.config.similarity_threshold
+                    ):
+                        similar.append(j)
+
+            if len(similar) > 1:
+                label_groups = {}
+                for idx in similar:
+                    label_groups.setdefault(entities[idx].label, []).append(idx)
+
+                best_label = max(
+                    label_groups,
+                    key=lambda l: (  # noqa: E741
+                        len(label_groups[l]),
+                        max(entities[i].confidence for i in label_groups[l]),
+                    ),
+                )
+                best_idx = max(
+                    label_groups[best_label], key=lambda i: entities[i].confidence
+                )
+            else:
+                best_idx = i
+
+            deduplicated.append(entities[best_idx])
+            processed.update(similar)
+
+        return deduplicated
+
+    def _normalize_text(self, text: str) -> str:
+        text = re.sub(r"[^\w\s]", "", text)
+        return " ".join(text.split()).lower()

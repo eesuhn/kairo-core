@@ -1,6 +1,6 @@
 from .abstractive import AbsSumPredictor, AbsSumConfig, AbsSumModel
 from .extractive import ExtSumPredictor, ExtSumConfig, ExtSumModel
-from .__main__ import SumMain
+from .__main__ import Summary
 
 
 __all__ = [
@@ -10,5 +10,5 @@ __all__ = [
     "ExtSumPredictor",
     "ExtSumConfig",
     "ExtSumModel",
-    "SumMain",
+    "Summary",
 ]
