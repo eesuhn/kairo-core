@@ -79,6 +79,8 @@ class NerPredictor:
         if self.config.deduplicate_entities:
             all_entities = [self._deduplicate_entities(ents) for ents in all_entities]
 
+        # Serialize entities to dicts
+        all_entities = [[entity.to_dict() for entity in ents] for ents in all_entities]
         return all_entities[0] if single_str else all_entities
 
     def _predict_batch(self, texts: list[str]) -> list:
