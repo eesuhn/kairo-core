@@ -1,9 +1,8 @@
-### Inspect dataset
+## Kairo Core
 
+### 🔥 Getting started...
+
+#### 1. Start server
 ```
-uv run -m scripts.data.inspect_ds \
-    --dataset eriktks/conll2003 \
-    --datatype ner \
-    --split train \
-    --num 1
+make server
 ```
