@@ -60,7 +60,7 @@ uv run -m scripts.train_ner \
     --learning-rate 1e-4 \
 ```
 
-- or you can simply opt out all the configs and run with `--mode new`
+- or you can simply opt out all the configs and run with `--mode new` only
 
 - include `--use-wandb` to log the training to [Weights & Biases](https://docs.wandb.ai/), make sure to login with `uv run wandb login` first
 
