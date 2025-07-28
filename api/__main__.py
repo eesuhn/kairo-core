@@ -26,7 +26,7 @@ app.add_middleware(
 UPLOADS_DIR = DATA_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".mp3", ".mp4"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".mp3", ".mp4", ".ogg"}
 
 
 def save_upload_file(upload_file: UploadFile) -> Path:

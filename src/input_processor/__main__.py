@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 class InputProcessor:
     # TODO: To support markdown and .txt files
     TEXT_EXT = (".pdf", ".docx")
-    AUDIO_EXT = (".mp3", ".mp4")
+    AUDIO_EXT = (".mp3", ".mp4", ".ogg")
 
     @staticmethod
     def process(input_path: Path) -> dict:
@@ -68,20 +68,27 @@ class InputProcessor:
             return "".join(page.get_text() for page in doc)
 
     @staticmethod
-    def _format_audio_segments(segments_data: dict) -> str:
+    def _format_audio_segments(segments_data: dict, speaker_info: bool = True) -> str:
         """
         Format audio segments into readable text
         """
         segments = segments_data.get("segments", [])
 
-        return "\n".join(
-            f"{segment.get('speaker', 'UNKNOWN')}: {text}"
-            for segment in segments
-            if (text := segment.get("text", "").strip())
-        )
+        if speaker_info:
+            return "\n".join(
+                f"{segment.get('speaker', 'UNKNOWN')}: {text}"
+                for segment in segments
+                if (text := segment.get("text", "").strip())
+            )
+        else:
+            return "\n".join(
+                f"{segment.get('text', '').strip()}"
+                for segment in segments
+                if (text := segment.get("text", "").strip())
+            )
 
     @staticmethod
     def _process_audio_file(file_path: Path) -> str:
         audio_processor = AudioProcessor(quiet=True)
-        segments_data = audio_processor.process(file_path)
-        return InputProcessor._format_audio_segments(segments_data)
+        segments_data = audio_processor.process(file_path, speaker_info=False)
+        return InputProcessor._format_audio_segments(segments_data, speaker_info=False)

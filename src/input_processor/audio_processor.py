@@ -64,7 +64,7 @@ class AudioProcessor:
         self.whisper_model = self._init_whisper_model()
         self.diarization_pipeline = self._init_diarization_pipeline()
 
-    def process(self, input_file: Path) -> dict:
+    def process(self, input_file: Path, speaker_info: bool = True) -> dict:
         """
         Process audio file for transcription and diarization.
 
@@ -73,11 +73,22 @@ class AudioProcessor:
         """
         self.cp.info(f"Processing audio: {str(input_file)}")
         transcription = self._transcribe(input_file)
-        diarization = self._diarize(input_file)
-
-        matched_segments = self._match_transcription_with_speakers(
-            transcription["segments"], diarization["segments"]
-        )
+        if speaker_info:
+            diarization = self._diarize(input_file)
+            matched_segments = self._match_transcription_with_speakers(
+                transcription["segments"], diarization["segments"]
+            )
+        else:
+            matched_segments = [
+                {
+                    "id": segment.id,
+                    "start": segment.start,
+                    "end": segment.end,
+                    "text": segment.text,
+                    "speaker": "UNKNOWN",
+                }
+                for segment in transcription["segments"]
+            ]
 
         return {"segments": matched_segments}
 
