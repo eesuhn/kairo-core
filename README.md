@@ -21,7 +21,6 @@ Before you begin, ensure the following prerequisites are met:
 
 ```bash
 make dvc-setup
-make dvc-pull
 ```
 
 _This will redirect you to browser for OAuth. You might encounter unauthorized warning cause I lazy to KYC for GCloud zzZ_
