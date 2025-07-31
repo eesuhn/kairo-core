@@ -17,9 +17,10 @@ Before you begin, ensure the following prerequisites are met:
 
 - Duplicate `.env.example` to `.env` and set up your READ-ONLY Hugging Face token.
 
-### 1. Download artifacts (Trained models, etc.)
+### 1. Download artifacts (Trained models, datasets, etc.)
 
 ```bash
+make data
 make dvc-setup
 ```
 

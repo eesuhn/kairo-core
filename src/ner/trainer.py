@@ -293,7 +293,7 @@ class NerTrainer:
         else:
             filepath = Path(self.checkpoint_dir / f"checkpoint_{self.global_step}.pt")
 
-        torch.save(self.mode.state_dict(), filepath)
+        torch.save(self.model.state_dict(), filepath)
         justsdk.print_success(f"Checkpoint saved to {filepath}")
 
         if self.config.use_wandb and is_best:
