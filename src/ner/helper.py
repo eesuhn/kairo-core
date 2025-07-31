@@ -7,6 +7,7 @@ from configs._constants import CONFIGS_DIR
 class NerHelper:
     idh = InterDataHandler(quiet=True)
     uni_rules = justsdk.read_file(CONFIGS_DIR / "ner" / "rules.yml")
+    all_labels = justsdk.read_file(CONFIGS_DIR / "ner" / "labels.yml")
     all_ds = idh.list_datasets_by_category("ner")
 
     @staticmethod
@@ -26,11 +27,14 @@ class NerHelper:
         label_map: dict = {}
 
         for ds_name in NerHelper.all_ds:
-            ds_labels = (
-                NerHelper.idh.load_dataset(ds_name)["train"]
-                .features["ner_tags"]
-                .feature.names
-            )
+            # ds_labels = (
+            #     NerHelper.idh.load_dataset(ds_name)["train"]
+            #     .features["ner_tags"]
+            #     .feature.names
+            # )
+
+            # Get the labels from `all_labels` instead of loading dataset
+            ds_labels = NerHelper.all_labels[ds_name]
             label_map[ds_name] = {}
 
             for ori_id, label in enumerate(ds_labels):

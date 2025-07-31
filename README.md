@@ -20,7 +20,6 @@ Before you begin, ensure the following prerequisites are met:
 ### 1. Download artifacts (Trained models, datasets, etc.)
 
 ```bash
-make data
 make dvc-setup
 ```
 
